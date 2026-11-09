@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7f8">
+    <title>Closeby — private chat</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main id="auth-screen" class="auth-screen">
+      <section class="auth-card" aria-labelledby="auth-heading">
+        <div class="brand-mark" aria-hidden="true">c</div>
+        <p class="eyebrow">A little space for your people</p>
+        <h1 id="auth-heading">Keep in close touch.</h1>
+        <p class="muted">Private, simple messages between friends.</p>
+        <div class="auth-switch" role="group" aria-label="Account action">
+          <button type="button" class="mode-button active" data-mode="login">Sign in</button>
+          <button type="button" class="mode-button" data-mode="register">Create account</button>
+        </div>
+        <form id="auth-form">
+          <label id="username-field" class="field" hidden>
+            <span>Username</span>
+            <input id="auth-username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}">
+            <small>3–24 letters, numbers, or underscores</small>
+          </label>
+          <label class="field">
+            <span>Phone number <span id="legacy-login-note">(or email for existing accounts)</span></span>
+            <input id="auth-phone" name="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" maxlength="40" required>
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="12" maxlength="72" required>
+            <small id="password-hint" hidden>Use at least 12 characters.</small>
+          </label>
+          <label id="registration-avatar-field" class="field" hidden>
+            <span>Profile picture</span>
+            <input id="registration-avatar" name="avatar" type="file" accept="image/png,image/jpeg,image/webp">
+            <small>PNG, JPEG, or WebP. Up to 5 MB.</small>
+            <img id="registration-avatar-preview" class="avatar-preview" alt="Profile picture preview" hidden>
+          </label>
+          <label id="verification-code-field" class="field" hidden>
+            <span>SMS verification code</span>
+            <input id="verification-code" name="verificationCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6">
+            <small>Enter the 6-digit code sent to your phone.</small>
+          </label>
+          <button id="registration-resend" class="button quiet" type="button" hidden>Resend code</button>
+          <button id="auth-submit" class="button primary wide" type="submit">Sign in</button>
+          <p id="auth-status" class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <main id="chat-screen" class="chat-screen" hidden>
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Closeby home"><span class="brand-mark small" aria-hidden="true">c</span>closeby</a>
+        <div class="account-tools">
+          <button id="profile-button" class="profile-button" type="button" aria-label="Profile settings">
+            <span id="current-avatar" class="avatar avatar-large" aria-hidden="true">•</span>
+            <span id="current-username" class="account-name"></span>
+          </button>
+          <button id="signout-button" class="button quiet" type="button">Sign out</button>
+        </div>
+      </header>
+      <section class="status-section" aria-label="Status updates">
+        <div class="status-heading">
+          <div>
+            <h2>Statuses</h2>
+            <p>Photos and notes shared for 24 hours</p>
+          </div>
+          <button id="add-status-button" class="button primary" type="button">＋ Add status</button>
+        </div>
+        <div id="status-feed" class="status-feed" role="list" aria-label="Your friends' statuses"></div>
+        <p id="status-feed-state" class="status-feed-state" role="status" aria-live="polite">Loading statuses…</p>
+      </section>
+      <div class="workspace">
+        <aside class="sidebar" aria-label="Connections and conversations">
+          <section class="search-section">
+            <h2>Find a friend</h2>
+            <form id="search-form" class="search-form">
+              <label class="visually-hidden" for="user-search">Search usernames</label>
+              <input id="user-search" name="username" autocomplete="off" placeholder="Type a username" minlength="2" maxlength="24" required>
+              <button class="button primary" type="submit">Find</button>
+            </form>
+            <p id="search-status" class="small-status" role="status" aria-live="polite"></p>
+            <ul id="search-results" class="people-list"></ul>
+          </section>
+          <section class="people-section">
+            <h2>Requests <span id="request-count" class="count-badge">0</span></h2>
+            <ul id="requests-list" class="people-list"></ul>
+            <p id="requests-empty" class="empty-note">No pending requests.</p>
+          </section>
+          <section class="people-section conversations-section">
+            <h2>Your conversations</h2>
+            <ul id="conversations-list" class="conversation-list"></ul>
+            <p id="conversations-empty" class="empty-note">Connect with a friend to start chatting.</p>
+          </section>
+        </aside>
+        <section class="chat-panel" aria-label="Chat">
+          <div id="active-chat" class="active-chat" hidden>
+            <header class="chat-header">
+              <button id="chat-profile-button" class="chat-profile-button" type="button" aria-label="View friend profile">
+                <span id="chat-avatar" class="avatar" aria-hidden="true">•</span>
+                <span class="chat-contact-copy">
+                  <h2 id="chat-title"></h2>
+                </span>
+              </button>
+              <div class="call-actions" aria-label="Call this friend">
+                <button id="voice-call-button" class="button quiet call-button" type="button" aria-label="Start voice call">
+                  <span aria-hidden="true">☎</span><span>Voice</span>
+                </button>
+                <button id="video-call-button" class="button quiet call-button" type="button" aria-label="Start video call">
+                  <span aria-hidden="true">▣</span><span>Video</span>
+                </button>
+              </div>
+            </header>
+            <section id="call-history" class="call-history" aria-label="Call history" hidden>
+              <h3>Recent calls</h3>
+              <ul id="call-history-list"></ul>
+            </section>
+            <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+            <p id="message-status" class="message-status" role="status" aria-live="polite"></p>
+            <form id="message-form" class="message-form">
+              <div class="composer">
+                <div id="attachment-preview" class="attachment-preview" hidden>
+                  <img id="attachment-image-preview" alt="Picture preview" hidden>
+                  <audio id="attachment-audio-preview" controls hidden></audio>
+                  <span id="attachment-name"></span>
+                  <button id="cancel-attachment" class="button quiet" type="button">Cancel</button>
+                </div>
+                <progress id="upload-progress" class="upload-progress" max="100" value="0" hidden></progress>
+                <div class="composer-controls">
+                  <label class="icon-button attach-button" for="image-input" title="Attach a picture" aria-label="Attach a picture">＋</label>
+                  <input id="image-input" class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp">
+                  <details id="emoji-picker" class="emoji-picker">
+                    <summary class="icon-button" aria-label="Choose an emoji" title="Choose an emoji">☺</summary>
+                    <div class="emoji-grid" aria-label="Emoji picker">
+                      <button type="button" aria-label="smile">😊</button><button type="button" aria-label="laugh">😂</button>
+                      <button type="button" aria-label="heart">❤️</button><button type="button" aria-label="thumbs up">👍</button>
+                      <button type="button" aria-label="wave">👋</button><button type="button" aria-label="sparkles">✨</button>
+                      <button type="button" aria-label="party">🎉</button><button type="button" aria-label="thinking">🤔</button>
+                      <button type="button" aria-label="hug">🤗</button><button type="button" aria-label="cry">🥹</button>
+                      <button type="button" aria-label="fire">🔥</button><button type="button" aria-label="sun">☀️</button>
+                    </div>
+                  </details>
+                  <button id="record-button" class="icon-button record-button" type="button" title="Record a voice note" aria-label="Record a voice note">●</button>
+                  <button id="stop-recording-button" class="button quiet" type="button" hidden>Stop</button>
+                  <button id="cancel-recording-button" class="button quiet" type="button" hidden>Cancel</button>
+                  <label class="visually-hidden" for="message-input">Write a message</label>
+                  <textarea id="message-input" name="body" rows="1" maxlength="4000" placeholder="Write a message…"></textarea>
+                  <button id="send-button" class="button primary send-button" type="submit" aria-label="Send message">Send <span aria-hidden="true">↗</span></button>
+                </div>
+              </div>
+            </form>
+            <p class="receipt-legend" aria-label="Message status: one check means sent, double checks mean delivered, highlighted double checks mean read">✓ Sent · ✓✓ Delivered · <span>✓✓ Read</span></p>
+            <p class="privacy-note">Only you and this friend can see these messages.</p>
+          </div>
+        </section>
+      </div>
+      <div id="global-status" class="global-status" role="status" aria-live="polite"></div>
+    </main>
+
+    <dialog id="status-create-dialog" class="profile-dialog status-create-dialog" aria-labelledby="status-create-title">
+      <div class="status-dialog-heading">
+        <div>
+          <p class="eyebrow">Share with your connections</p>
+          <h2 id="status-create-title">Add a status</h2>
+        </div>
+        <button id="status-create-close" class="button quiet" type="button">Close</button>
+      </div>
+      <form id="status-create-form">
+        <label class="field" for="status-text">
+          <span>Text <small>Optional · up to 500 characters</small></span>
+          <textarea id="status-text" name="body" rows="4" maxlength="500" placeholder="What’s on your mind?"></textarea>
+        </label>
+        <label class="field">
+          <span>Photo <small>Optional · PNG, JPEG, or WebP up to 5 MB</small></span>
+          <input id="status-photo" name="media" type="file" accept="image/png,image/jpeg,image/webp">
+        </label>
+        <img id="status-photo-preview" class="status-photo-preview" alt="Status photo preview" hidden>
+        <progress id="status-upload-progress" class="upload-progress" max="100" value="0" hidden></progress>
+        <p id="status-create-message" class="form-status" role="status" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button id="status-create-cancel" class="button quiet" type="button">Cancel</button>
+          <button id="status-create-submit" class="button primary" type="submit">Post status</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="status-viewer-dialog" class="profile-dialog status-viewer-dialog" aria-labelledby="status-viewer-title">
+      <div class="status-dialog-heading">
+        <div class="status-viewer-user">
+          <span id="status-viewer-avatar" class="avatar" aria-hidden="true">•</span>
+          <div>
+            <h2 id="status-viewer-title"></h2>
+            <p id="status-viewer-time" class="muted"></p>
+          </div>
+        </div>
+        <button id="status-viewer-close" class="button quiet" type="button">Close</button>
+      </div>
+      <img id="status-viewer-image" class="status-viewer-image" alt="Status photo" hidden>
+      <p id="status-viewer-body" class="status-viewer-body"></p>
+      <p id="status-viewer-expires" class="status-viewer-expires"></p>
+      <section id="status-viewer-list-section" class="status-viewer-list-section" hidden>
+        <h3 id="status-viewer-list-heading">Viewers</h3>
+        <ul id="status-viewer-list" class="status-viewer-list"></ul>
+        <p id="status-viewer-empty" class="empty-note" hidden>No one has viewed this status yet.</p>
+      </section>
+      <div class="dialog-actions">
+        <button id="status-delete-button" class="button quiet status-delete-button" type="button" hidden>Delete my status</button>
+      </div>
+      <p id="status-viewer-message" class="form-status" role="status" aria-live="polite"></p>
+    </dialog>
+
+    <dialog id="call-dialog" class="call-dialog" aria-labelledby="call-dialog-title">
+      <div class="call-dialog-header">
+        <div>
+          <p class="eyebrow">Private call</p>
+          <h2 id="call-dialog-title">Call</h2>
+        </div>
+        <button id="call-dismiss-button" class="button quiet" type="button" aria-label="Close call window" hidden>Close</button>
+      </div>
+      <p id="call-dialog-status" class="call-dialog-status" role="status" aria-live="polite"></p>
+      <p id="call-dialog-error" class="call-dialog-error" role="alert" hidden></p>
+      <audio id="remote-call-audio" class="visually-hidden" autoplay></audio>
+      <div id="call-video-stage" class="call-video-stage" hidden>
+        <video id="remote-call-video" autoplay playsinline></video>
+        <video id="local-call-video" autoplay muted playsinline></video>
+        <p id="call-video-placeholder">Waiting for video…</p>
+      </div>
+      <p id="call-duration" class="call-duration" hidden>00:00</p>
+      <div class="call-controls">
+        <button id="answer-call-button" class="button primary" type="button" hidden>Answer</button>
+        <button id="decline-call-button" class="button quiet call-decline" type="button" hidden>Decline</button>
+        <button id="mute-call-button" class="button quiet" type="button" hidden>Mute</button>
+        <button id="camera-call-button" class="button quiet" type="button" hidden>Turn camera off</button>
+        <button id="switch-camera-button" class="button quiet" type="button" hidden>Switch camera</button>
+        <button id="end-call-button" class="button call-end" type="button" hidden>End call</button>
+      </div>
+    </dialog>
+
+    <dialog id="contact-dialog" class="profile-dialog contact-dialog" aria-labelledby="contact-profile-name">
+      <button id="contact-profile-close" class="button quiet contact-profile-close" type="button">Close</button>
+      <div class="contact-profile">
+        <span id="contact-profile-avatar" class="avatar contact-profile-avatar" aria-hidden="true">•</span>
+        <h2 id="contact-profile-name"></h2>
+        <p>Connected friend</p>
+        <div class="call-actions">
+          <button id="profile-voice-call-button" class="button primary" type="button">☎ Voice call</button>
+          <button id="profile-video-call-button" class="button primary" type="button">▣ Video call</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="profile-dialog" class="profile-dialog" aria-labelledby="profile-heading">
+      <h2 id="profile-heading">Account settings</h2>
+      <p class="muted">Only you can view and change these details.</p>
+      <form id="profile-form" class="settings-form">
+        <h3>Profile</h3>
+        <img id="profile-avatar-preview" class="avatar-preview profile-avatar-preview" alt="Current profile picture">
+        <label class="field">
+          <span>Username</span>
+          <input id="settings-username" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" required>
+        </label>
+        <label class="field">
+          <span>Profile picture</span>
+          <input id="profile-avatar-input" name="avatar" type="file" accept="image/png,image/jpeg,image/webp">
+          <small>PNG, JPEG, or WebP. Up to 5 MB.</small>
+        </label>
+        <progress id="profile-upload-progress" class="upload-progress" max="100" value="0" hidden></progress>
+        <button id="profile-save" class="button primary" type="submit">Save profile</button>
+      </form>
+      <form id="phone-form" class="settings-form">
+        <h3>Phone number</h3>
+        <p id="verified-phone" class="settings-note"></p>
+        <label class="field">
+          <span>New phone number</span>
+          <input id="settings-phone" name="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" maxlength="40" required>
+        </label>
+        <label class="field">
+          <span>Current password</span>
+          <input id="phone-current-password" type="password" autocomplete="current-password" required>
+        </label>
+        <label id="settings-code-field" class="field" hidden>
+          <span>SMS verification code</span>
+          <input id="settings-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6">
+        </label>
+        <button id="settings-resend" class="button quiet" type="button" hidden>Resend code</button>
+        <button id="phone-save" class="button primary" type="submit">Verify new number</button>
+      </form>
+      <form id="password-form" class="settings-form">
+        <h3>Change password</h3>
+        <label class="field">
+          <span>Current password</span>
+          <input id="password-current" type="password" autocomplete="current-password" required>
+        </label>
+        <label class="field">
+          <span>New password</span>
+          <input id="password-new" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
+          <small>At least 12 characters.</small>
+        </label>
+        <button class="button quiet" type="submit">Update password</button>
+      </form>
+      <form id="preferences-form" class="settings-form">
+        <h3>Preferences</h3>
+        <label class="field">
+          <span>Color theme</span>
+          <select id="settings-theme" name="theme">
+            <option value="system">Use device setting</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+        <label class="settings-check">
+          <input id="settings-read-receipts" type="checkbox">
+          <span>Share read receipts with friends</span>
+        </label>
+        <button class="button quiet" type="submit">Save preferences</button>
+      </form>
+      <p id="profile-status" class="form-status" role="status" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button id="profile-cancel" class="button quiet" type="button">Close</button>
+        <button id="settings-signout" class="button quiet" type="button">Sign out</button>
+      </div>
+    </dialog>
+  </body>
+</html>
