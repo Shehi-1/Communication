@@ -693,23 +693,27 @@ function createApp(options = {}) {
       if (attempts && attempts.attempt_count >= LOGIN_ATTEMPT_LIMIT) {
         throw new HttpError(429, "Too many sign-in attempts. Try again later.");
       }
-      const isEmailLogin = identifier.includes("@");
-      const normalizedIdentifier = isEmailLogin
-        ? identifier.trim().toLowerCase()
-        : normalizePhone(identifier);
-      const user = db
-        .prepare(
-          `SELECT id, username, password_hash, avatar_key FROM users
-           WHERE ${isEmailLogin ? "email" : "phone_number"} = ?`
-        )
-        .get(normalizedIdentifier);
+      const trimmedIdentifier = identifier.trim();
+      const identifierColumn = trimmedIdentifier.includes("@")
+        ? "email"
+        : trimmedIdentifier.startsWith("+")
+          ? "phone_number"
+          : "username_key";
+      let normalizedIdentifier = trimmedIdentifier.toLowerCase();
+      if (identifierColumn === "phone_number") {
+        normalizedIdentifier = normalizePhone(trimmedIdentifier);
+      }
+      const user = db.prepare(
+        `SELECT id, username, password_hash, avatar_key FROM users
+         WHERE ${identifierColumn} = ?`
+      ).get(normalizedIdentifier);
       const validPassword = await bcrypt.compare(
         password,
         user?.password_hash || DUMMY_PASSWORD_HASH
       );
       if (!user || !validPassword) {
         recordLoginFailure(attemptKey, now);
-        throw new HttpError(401, "Email or password is incorrect.");
+        throw new HttpError(401, "Sign-in details are incorrect.");
       }
       db.prepare("DELETE FROM login_attempts WHERE ip_key = ?").run(attemptKey);
       const csrfToken = await setAuthenticatedSession(req, user.id);

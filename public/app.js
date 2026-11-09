@@ -87,7 +87,14 @@ async function request(path, { method = "GET", body, formData, authenticated = f
     body: formData || (body === undefined ? undefined : JSON.stringify(body))
   });
   if (response.status === 204) return null;
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(
+      `The server returned a non-JSON response (HTTP ${response.status}). Refresh the page and try again.`
+    );
+  }
   if (!response.ok) {
     if (response.status === 401 && authenticated) showSignedOut();
     throw new Error(data.error || "The request could not be completed.");
