@@ -184,8 +184,9 @@ function setAuthMode(mode) {
   document.querySelector("#verification-code").required = false;
   document.querySelector("#verification-code").value = "";
   document.querySelector("#registration-resend").hidden = true;
-  document.querySelector("#legacy-login-note").hidden = registering;
-  phoneInput.placeholder = registering ? "+1 555 123 4567" : "Phone number or email";
+  phoneInput.placeholder = registering
+    ? "Phone number with country code"
+    : "Username, phone number, or email";
   passwordInput.autocomplete = registering ? "new-password" : "current-password";
   passwordHint.hidden = !registering;
   authSubmit.textContent = registering

@@ -285,10 +285,10 @@ test("authentication uses a generic failure and creates an authenticated session
   const wrongPassword = await createClient();
   const failed = await wrongPassword.login(phoneFor("bob"), "not-the-right-password");
   assert.equal(failed.response.status, 401);
-  assert.equal(failed.data.error, "Email or password is incorrect.");
+  assert.equal(failed.data.error, "Sign-in details are incorrect.");
 
   const client = await createClient();
-  const loggedIn = await client.login(phoneFor("bob"));
+  const loggedIn = await client.login("BOB");
   assert.equal(loggedIn.response.status, 200);
   assert.equal(loggedIn.data.user.username, "bob");
   const session = await client.call("/session");
@@ -301,6 +301,10 @@ test("authentication uses a generic failure and creates an authenticated session
   assert.equal(protectedRequest.response.status, 401);
   const signedBackIn = await client.login(phoneFor("bob"));
   assert.equal(signedBackIn.response.status, 200);
+  const emailLogin = await createClient();
+  const bobEmail = app.locals.db.prepare("SELECT email FROM users WHERE username_key = ?")
+    .get("bob").email;
+  assert.equal((await emailLogin.login(bobEmail)).response.status, 200);
 });
 
 test("phone verification gates account creation and enforces expiry, attempt, and resend limits", async () => {

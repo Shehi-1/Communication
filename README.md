@@ -4,7 +4,7 @@ A small private messaging app built with Node.js, Express, SQLite, and plain bro
 
 ## Requirements
 
-- Node.js 22.5 or newer (the app uses Node's built-in `node:sqlite` module)
+- Node.js 22.x (the app uses Node's built-in `node:sqlite` module)
 - npm
 
 ## Setup
@@ -30,6 +30,10 @@ npm start
 
 Open <http://localhost:3000>. Voice/video calls use browser WebRTC APIs, authenticated private signaling through the app, and a public STUN server. Microphone and camera access is requested only when starting or answering a call. Browsers require HTTPS for media outside localhost. STUN-only connectivity can fail on restrictive networks; configure a TURN relay service before production use if callers must connect across those networks. The app does not store or expose TURN credentials. In production, set `NODE_ENV=production` over HTTPS so session cookies are marked `Secure`. If HTTPS terminates at a trusted reverse proxy, also set `TRUST_PROXY=1`.
 
+## Vercel deployment status
+
+`src/server.js` exports the Express app for Vercel and starts a listener only for local development. Set a strong `SESSION_SECRET` in the Vercel project's Production (and Preview, if used) environment variables. Vercel's writable `/tmp` directory is used as a temporary fallback for SQLite and uploaded media so the function can initialize; **this is not durable storage**. Database rows, sessions, and uploads may disappear on cold starts, be isolated between function instances, or be lost on redeploy. Do not use this fallback for real accounts or production data. Before production, migrate SQLite and its session store to a managed PostgreSQL database and move private uploads to durable private object storage. The existing app does not yet support `DATABASE_URL` or a remote object-storage provider; adding those environment variables alone will not migrate it.
+
 ## Test
 
 ```powershell
@@ -41,7 +45,7 @@ The tests use temporary SQLite files and a mock SMS provider; they cover phone v
 ## Privacy and behavior
 
 - Only accepted connections can view a conversation or send messages; this is enforced by the API.
-- New accounts are created only after a normalized international phone number is verified by SMS. Codes are HMAC-hashed at rest, expire after 10 minutes, allow at most five attempts, and are limited to three sends per 15-minute window with a 60-second resend delay. Legacy email accounts can continue signing in with their existing email and password.
+- New accounts are created only after a normalized international phone number is verified by SMS. Codes are HMAC-hashed at rest, expire after 10 minutes, allow at most five attempts, and are limited to three sends per 15-minute window with a 60-second resend delay. Sign in with the username, verified phone number, or email associated with the account.
 - Delivery is recorded when the recipient loads conversation history. Read receipts are recorded only for incoming messages the browser confirms are visible, and the sender sees read state only when the recipient has read receipts enabled. Users can change this preference in account settings.
 - Phone changes require the current password and a fresh SMS verification. Password changes also require the current password; settings and preferences are available only to the signed-in account. Theme preference supports light, dark, and device settings.
 - Registration requires a PNG, JPEG, or WebP profile picture (maximum 5 MB). Images are decoded and re-encoded as metadata-free WebP; animated or malformed images are rejected. Chat images have a 5 MB upload limit and are resized before private storage.

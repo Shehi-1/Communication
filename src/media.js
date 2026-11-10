@@ -2,7 +2,6 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const sharp = require("sharp");
-const { parseBuffer } = require("music-metadata");
 
 const IMAGE_TYPES = new Map([
   ["image/png", "png"],
@@ -62,6 +61,7 @@ async function validateAudio(file) {
     throw new MediaValidationError("Voice notes must be valid WAV audio recordings.");
   }
   try {
+    const { parseBuffer } = await import("music-metadata");
     const metadata = await parseBuffer(file.buffer, {
       mimeType: mime,
       size: file.buffer.length
