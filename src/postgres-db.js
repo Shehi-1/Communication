@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { Pool, types } = require("pg");
 const { AsyncLocalStorage } = require("node:async_hooks");
+const { setTimeout: delay } = require("node:timers/promises");
 
 types.setTypeParser(20, Number);
 
@@ -21,10 +22,26 @@ class PostgresDatabase {
     this.context = new AsyncLocalStorage();
     this.pool = new Pool({ connectionString, max: 3, idleTimeoutMillis: 10000 });
     this.ready = this.migrate();
+    this.ready.catch((error) => {
+      console.error("Could not initialize PostgreSQL:", error.code || error.name || "Error");
+    });
+  }
+
+  async connectWithRetry() {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await this.pool.connect();
+      } catch (error) {
+        const retryable = ["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EHOSTUNREACH"]
+          .includes(error.code);
+        if (!retryable || attempt >= 4) throw error;
+        await delay(250 * 2 ** attempt);
+      }
+    }
   }
 
   async migrate() {
-    const client = await this.pool.connect();
+    const client = await this.connectWithRetry();
     try {
       await client.query("BEGIN");
       await client.query(`

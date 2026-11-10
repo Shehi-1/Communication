@@ -1,12 +1,12 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { DatabaseSync } = require("node:sqlite");
 
 function createDatabase(dbPath, databaseUrl) {
   if (databaseUrl) {
     const { PostgresDatabase } = require("./postgres-db");
     return new PostgresDatabase(databaseUrl);
   }
+  const { DatabaseSync } = require("node:sqlite");
   const resolvedPath = path.resolve(dbPath);
   fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
 
