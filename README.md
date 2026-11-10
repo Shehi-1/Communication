@@ -28,7 +28,7 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 npm start
 ```
 
-Open <http://localhost:3000>. Voice/video calls use browser WebRTC APIs, authenticated private signaling through the app, and a public STUN server. Microphone and camera access is requested only when starting or answering a call. Browsers require HTTPS for media outside localhost. STUN-only connectivity can fail on restrictive networks; configure a TURN relay service before production use if callers must connect across those networks. The app does not store or expose TURN credentials. In production, set `NODE_ENV=production` over HTTPS so session cookies are marked `Secure`. If HTTPS terminates at a trusted reverse proxy, also set `TRUST_PROXY=1`.
+Open <http://localhost:3000>. Voice/video calls use browser WebRTC APIs, authenticated private signaling through the app, and a public STUN server. Microphone and camera access is requested only when starting or answering a call. Browsers require HTTPS for media outside localhost. STUN-only connectivity can fail on restrictive networks; configure a TURN relay service before production use if callers must connect across those networks. The app does not store or expose TURN credentials. In production, set `NODE_ENV=production` over HTTPS so session cookies are marked `Secure`. If HTTPS terminates at a trusted reverse proxy, set `TRUST_PROXY=1`; the Vercel entrypoint enables proxy trust automatically.
 
 ## Vercel deployment status
 

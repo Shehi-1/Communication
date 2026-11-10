@@ -5,6 +5,7 @@ const { createApp } = require("./app");
 
 const isVercel = process.env.VERCEL === "1";
 const app = createApp({
+  trustProxy: isVercel,
   dbPath: process.env.DB_PATH || (
     isVercel ? path.join("/tmp", "closeby", "chat.sqlite") : undefined
   ),

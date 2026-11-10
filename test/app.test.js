@@ -929,6 +929,37 @@ test("mutating routes require a valid CSRF token", async () => {
   assert.ok(initial.data.csrfToken);
 });
 
+test("production sessions issue secure cookies behind a trusted HTTPS proxy", async () => {
+  const secureApp = createApp({
+    dbPath: path.join(tempDir, "secure-session.sqlite"),
+    mediaDir: path.join(tempDir, "secure-session-media"),
+    sessionSecret: "a-test-only-session-secret-that-is-long-enough",
+    production: true,
+    trustProxy: 1
+  });
+  const secureServer = secureApp.listen(0, "127.0.0.1");
+  await new Promise((resolve) => secureServer.once("listening", resolve));
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:${secureServer.address().port}/api/session`,
+      { headers: { "X-Forwarded-Proto": "https" } }
+    );
+    assert.equal(response.status, 200);
+    const cookie = response.headers.getSetCookie().find((value) =>
+      value.startsWith("__Host-chat.sid=")
+    );
+    assert.ok(cookie);
+    assert.match(cookie, /;\s*Secure(?:;|$)/i);
+    assert.match(cookie, /;\s*Path=\/(?:;|$)/i);
+    assert.doesNotMatch(cookie, /;\s*Domain=/i);
+  } finally {
+    await new Promise((resolve, reject) => {
+      secureServer.close((error) => (error ? reject(error) : resolve()));
+    });
+    secureApp.locals.db.close();
+  }
+});
+
 test("repeated failed sign-ins are rate-limited", async () => {
   const registration = await createClient();
   await registration.register("rate_limit_user");
