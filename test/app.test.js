@@ -204,14 +204,21 @@ test("registration requires a valid image and profile pictures can be changed pr
   assert.equal(picture.headers.get("cache-control"), "private, no-store");
 });
 
-test("authentication uses a generic failure and creates an authenticated session", async () => {
+test("authentication gives actionable generic failures and creates an authenticated session", async () => {
   const registration = await createClient();
   await registration.register("bob");
 
   const wrongPassword = await createClient();
   const failed = await wrongPassword.login(phoneFor("bob"), "not-the-right-password");
   assert.equal(failed.response.status, 401);
-  assert.equal(failed.data.error, "Sign-in details are incorrect.");
+  assert.equal(
+    failed.data.error,
+    "We couldn’t sign you in. Check your username and password, or create an account."
+  );
+  const missingUser = await createClient();
+  const missing = await missingUser.login("unknown_user");
+  assert.equal(missing.response.status, 401);
+  assert.equal(missing.data.error, failed.data.error);
 
   const client = await createClient();
   const loggedIn = await client.login("BOB");

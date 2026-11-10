@@ -686,7 +686,10 @@ function createApp(options = {}) {
       );
       if (!user || !validPassword) {
         await recordLoginFailure(attemptKey, now);
-        throw new HttpError(401, "Sign-in details are incorrect.");
+        throw new HttpError(
+          401,
+          "We couldn’t sign you in. Check your username and password, or create an account."
+        );
       }
       await db.prepare("DELETE FROM login_attempts WHERE ip_key = ?").run(attemptKey);
       const csrfToken = await setAuthenticatedSession(req, user.id);
