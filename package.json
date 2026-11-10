@@ -19,6 +19,7 @@
     "libphonenumber-js": "^1.13.15",
     "multer": "^2.5.0",
     "music-metadata": "^12.3.5",
+    "pg": "^8.16.3",
     "sharp": "^0.35.5"
   }
 }

@@ -2,11 +2,27 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { DatabaseSync } = require("node:sqlite");
 
-function createDatabase(dbPath) {
+function createDatabase(dbPath, databaseUrl) {
+  if (databaseUrl) {
+    const { PostgresDatabase } = require("./postgres-db");
+    return new PostgresDatabase(databaseUrl);
+  }
   const resolvedPath = path.resolve(dbPath);
   fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
 
   const db = new DatabaseSync(resolvedPath);
+  db.dialect = "sqlite";
+  db.transaction = async (work) => {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      const result = await work();
+      db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  };
   db.exec(`
     PRAGMA foreign_keys = ON;
     PRAGMA journal_mode = WAL;

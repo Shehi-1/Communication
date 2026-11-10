@@ -4,6 +4,9 @@ const path = require("node:path");
 const { createApp } = require("./app");
 
 const isVercel = process.env.VERCEL === "1";
+if (isVercel && !process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is required on Vercel for persistent accounts and sessions.");
+}
 const app = createApp({
   trustProxy: isVercel,
   dbPath: process.env.DB_PATH || (
@@ -11,7 +14,8 @@ const app = createApp({
   ),
   mediaDir: process.env.MEDIA_DIR || (
     isVercel ? path.join("/tmp", "closeby", "media") : undefined
-  )
+  ),
+  databaseUrl: process.env.DATABASE_URL || null
 });
 
 module.exports = app;
@@ -27,8 +31,9 @@ if (!isVercel) {
   });
 
   function shutdown() {
-    server.close(() => {
-      app.locals.db.close();
+    server.close(async (error) => {
+      if (error) throw error;
+      await app.locals.db.close();
       process.exit(0);
     });
   }

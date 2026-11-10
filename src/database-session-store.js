@@ -1,6 +1,6 @@
 const session = require("express-session");
 
-class SQLiteSessionStore extends session.Store {
+class DatabaseSessionStore extends session.Store {
   constructor(db) {
     super();
     this.db = db;
@@ -22,41 +22,31 @@ class SQLiteSessionStore extends session.Store {
   }
 
   get(sid, callback) {
-    try {
-      const row = this.getStatement.get(sid, Date.now());
-      callback(null, row ? JSON.parse(row.sess) : null);
-    } catch (error) {
-      callback(error);
-    }
+    Promise.resolve()
+      .then(() => this.getStatement.get(sid, Date.now()))
+      .then((row) => callback(null, row ? JSON.parse(row.sess) : null), callback);
   }
 
   set(sid, sess, callback = () => {}) {
-    try {
+    Promise.resolve()
+      .then(async () => {
       const expiresAt = this.expiry(sess);
-      this.setStatement.run(sid, JSON.stringify(sess), expiresAt);
-      this.cleanupExpired();
-      callback(null);
-    } catch (error) {
-      callback(error);
-    }
+      await this.setStatement.run(sid, JSON.stringify(sess), expiresAt);
+      await this.cleanupExpired();
+    })
+      .then(() => callback(null), callback);
   }
 
   destroy(sid, callback = () => {}) {
-    try {
-      this.destroyStatement.run(sid);
-      callback(null);
-    } catch (error) {
-      callback(error);
-    }
+    Promise.resolve()
+      .then(() => this.destroyStatement.run(sid))
+      .then(() => callback(null), callback);
   }
 
   touch(sid, sess, callback = () => {}) {
-    try {
-      this.touchStatement.run(this.expiry(sess), sid);
-      callback(null);
-    } catch (error) {
-      callback(error);
-    }
+    Promise.resolve()
+      .then(() => this.touchStatement.run(this.expiry(sess), sid))
+      .then(() => callback(null), callback);
   }
 
   expiry(sess) {
@@ -65,12 +55,12 @@ class SQLiteSessionStore extends session.Store {
       : Date.now() + (sess.cookie?.maxAge ?? 24 * 60 * 60 * 1000);
   }
 
-  cleanupExpired() {
+  async cleanupExpired() {
     if (Date.now() - this.lastCleanup > 60 * 60 * 1000) {
-      this.cleanupStatement.run(Date.now());
+      await this.cleanupStatement.run(Date.now());
       this.lastCleanup = Date.now();
     }
   }
 }
 
-module.exports = { SQLiteSessionStore };
+module.exports = { DatabaseSessionStore };
