@@ -1814,6 +1814,13 @@ function createApp(options = {}) {
   });
 
   app.locals.db = db;
+  app.locals.statusPruneTimer = statusPruneTimer;
+  app.close = async () => {
+    clearInterval(statusPruneTimer);
+    if (app.locals.db && typeof app.locals.db.close === "function") {
+      await app.locals.db.close();
+    }
+  };
   return app;
 }
 

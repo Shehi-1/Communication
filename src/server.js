@@ -33,7 +33,11 @@ if (!isVercel) {
   function shutdown() {
     server.close(async (error) => {
       if (error) throw error;
-      await app.locals.db.close();
+      if (typeof app.close === "function") {
+        await app.close();
+      } else if (app.locals.db && typeof app.locals.db.close === "function") {
+        await app.locals.db.close();
+      }
       process.exit(0);
     });
   }

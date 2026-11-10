@@ -50,15 +50,48 @@ async function normalizeImage(file, { avatar = false } = {}) {
   }
 }
 
+const ALLOWED_AUDIO_MIMES = new Set([
+  "audio/wav",
+  "audio/webm",
+  "audio/ogg",
+  "audio/mpeg",
+  "audio/mp4"
+]);
+
+function validateAudioHeader(buffer, mime) {
+  if (!buffer || buffer.length < 4) return false;
+  if (mime === "audio/wav") {
+    return (
+      buffer.length >= 12 &&
+      buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+      buffer.subarray(8, 12).toString("ascii") === "WAVE"
+    );
+  }
+  if (mime === "audio/ogg") {
+    return buffer.subarray(0, 4).toString("ascii") === "OggS";
+  }
+  if (mime === "audio/webm") {
+    return buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+  }
+  if (mime === "audio/mpeg") {
+    const isId3 = buffer.length >= 3 && buffer.subarray(0, 3).toString("ascii") === "ID3";
+    const isSync = (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0);
+    return isId3 || isSync;
+  }
+  if (mime === "audio/mp4") {
+    return buffer.length >= 8 && buffer.subarray(4, 8).toString("ascii") === "ftyp";
+  }
+  return false;
+}
+
 async function validateAudio(file) {
   const mime = declaredMime(file);
   if (
     !file?.buffer?.length ||
-    mime !== "audio/wav" ||
-    file.buffer.subarray(0, 4).toString("ascii") !== "RIFF" ||
-    file.buffer.subarray(8, 12).toString("ascii") !== "WAVE"
+    !ALLOWED_AUDIO_MIMES.has(mime) ||
+    !validateAudioHeader(file.buffer, mime)
   ) {
-    throw new MediaValidationError("Voice notes must be valid WAV audio recordings.");
+    throw new MediaValidationError("Voice notes must be valid WAV, WebM, Ogg, MP3, or MP4 audio recordings.");
   }
   try {
     const { parseBuffer } = await import("music-metadata");

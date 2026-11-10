@@ -38,7 +38,11 @@ after(async () => {
   await new Promise((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
   });
-  app.locals.db.close();
+  if (typeof app.close === "function") {
+    await app.close();
+  } else {
+    app.locals.db.close();
+  }
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
