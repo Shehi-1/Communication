@@ -1039,6 +1039,26 @@ test("legacy message rows survive the media schema migration", (context) => {
 test("mutating routes require a valid CSRF token", async () => {
   const client = await createClient();
   const initial = await client.call("/session");
+  const crossInstanceResponse = await fetch(`${baseUrl}/api/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": initial.data.csrfToken
+    },
+    body: JSON.stringify({})
+  });
+  assert.equal(crossInstanceResponse.status, 400);
+
+  const tamperedResponse = await fetch(`${baseUrl}/api/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": `${initial.data.csrfToken.slice(0, -1)}0`
+    },
+    body: JSON.stringify({})
+  });
+  assert.equal(tamperedResponse.status, 403);
+
   const response = await fetch(`${baseUrl}/api/register/start`, {
     method: "POST",
     headers: { Cookie: "chat.sid=invalid", "Content-Type": "application/json" },

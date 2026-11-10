@@ -87,12 +87,30 @@ function relationship(db, userId, otherId) {
     .get(Math.min(userId, otherId), Math.max(userId, otherId));
 }
 
-function csrfMatches(expected, supplied) {
-  if (typeof expected !== "string" || typeof supplied !== "string") {
+function createCsrfToken(secret, now = Date.now()) {
+  const issuedAt = Math.floor(now / 1000);
+  const nonce = crypto.randomBytes(32).toString("hex");
+  const value = `${issuedAt}.${nonce}`;
+  const signature = crypto.createHmac("sha256", secret).update(value).digest("hex");
+  return `${value}.${signature}`;
+}
+
+function csrfMatches(secret, supplied, now = Date.now()) {
+  if (typeof supplied !== "string") {
     return false;
   }
-  const expectedBuffer = Buffer.from(expected);
-  const suppliedBuffer = Buffer.from(supplied);
+  const match = /^(\d{10})\.([a-f0-9]{64})\.([a-f0-9]{64})$/.exec(supplied);
+  if (!match) return false;
+
+  const issuedAt = Number(match[1]);
+  const nowSeconds = Math.floor(now / 1000);
+  if (issuedAt > nowSeconds + 60 || nowSeconds - issuedAt > 24 * 60 * 60) {
+    return false;
+  }
+
+  const value = `${match[1]}.${match[2]}`;
+  const expectedBuffer = crypto.createHmac("sha256", secret).update(value).digest();
+  const suppliedBuffer = Buffer.from(match[3], "hex");
   return (
     expectedBuffer.length === suppliedBuffer.length &&
     crypto.timingSafeEqual(expectedBuffer, suppliedBuffer)
@@ -202,7 +220,7 @@ function createApp(options = {}) {
   app.use("/api", api);
 
   const requireCsrf = (req, _res, next) => {
-    if (!csrfMatches(req.session.csrfToken, req.get("X-CSRF-Token"))) {
+    if (!csrfMatches(secret, req.get("X-CSRF-Token"))) {
       return next(new HttpError(403, "Invalid or missing CSRF token."));
     }
     next();
@@ -338,7 +356,7 @@ function createApp(options = {}) {
       req.session.regenerate((error) => {
         if (error) return reject(error);
         req.session.userId = userId;
-        req.session.csrfToken = crypto.randomBytes(32).toString("hex");
+        req.session.csrfToken = createCsrfToken(secret);
         req.session.save((saveError) => {
           if (saveError) return reject(saveError);
           resolve(req.session.csrfToken);
@@ -573,13 +591,12 @@ function createApp(options = {}) {
   api.get(
     "/session",
     asyncRoute(async (req, res) => {
-      if (!req.session.csrfToken) {
-        req.session.csrfToken = crypto.randomBytes(32).toString("hex");
-      }
+      req.session.csrfToken = createCsrfToken(secret);
       const user = Number.isSafeInteger(req.session.userId)
         ? db.prepare("SELECT id, username, avatar_key FROM users WHERE id = ?").get(req.session.userId)
         : null;
       if (user) updatePresence(user.id);
+      res.set("Cache-Control", "no-store");
       res.json({
         user: user ? safeUser(user) : null,
         csrfToken: req.session.csrfToken,
