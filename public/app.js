@@ -4,6 +4,7 @@ const authForm = document.querySelector("#auth-form");
 const authStatus = document.querySelector("#auth-status");
 const usernameField = document.querySelector("#username-field");
 const usernameInput = document.querySelector("#auth-username");
+const identifierField = document.querySelector("#identifier-field");
 const phoneInput = document.querySelector("#auth-phone");
 const passwordInput = document.querySelector("#auth-password");
 const authSubmit = document.querySelector("#auth-submit");
@@ -35,9 +36,6 @@ const statusUploadProgress = document.querySelector("#status-upload-progress");
 const statusViewerDialog = document.querySelector("#status-viewer-dialog");
 
 let authMode = "login";
-let registrationCodeSent = false;
-let registrationResendTimer = null;
-let smsVerificationRequired = true;
 let settingsCodeSent = false;
 let csrfToken = "";
 let currentUser = null;
@@ -144,58 +142,18 @@ function setStatus(element, message, type = "") {
   element.className = `${element.className.replace(/\s(error|success)/g, "")} ${type}`.trim();
 }
 
-function resetRegistrationResendButton() {
-  if (registrationResendTimer !== null) {
-    window.clearInterval(registrationResendTimer);
-    registrationResendTimer = null;
-  }
-  const button = document.querySelector("#registration-resend");
-  button.disabled = false;
-  button.textContent = "Resend code";
-}
-
-function startRegistrationResendCooldown() {
-  resetRegistrationResendButton();
-  const button = document.querySelector("#registration-resend");
-  const availableAt = Date.now() + 60_000;
-  const updateCountdown = () => {
-    const secondsLeft = Math.ceil((availableAt - Date.now()) / 1000);
-    if (secondsLeft <= 0) {
-      resetRegistrationResendButton();
-      return;
-    }
-    button.disabled = true;
-    button.textContent = `Resend in ${secondsLeft}s`;
-  };
-  updateCountdown();
-  registrationResendTimer = window.setInterval(updateCountdown, 1000);
-}
-
 function setAuthMode(mode) {
   authMode = mode;
   const registering = mode === "register";
-  resetRegistrationResendButton();
-  registrationCodeSent = false;
   usernameField.hidden = !registering;
   usernameInput.required = registering;
+  identifierField.hidden = registering;
+  phoneInput.required = !registering;
   registrationAvatarField.hidden = !registering;
   registrationAvatarInput.required = registering;
-  document.querySelector("#verification-code-field").hidden = true;
-  document.querySelector("#verification-code").required = false;
-  document.querySelector("#verification-code").value = "";
-  document.querySelector("#registration-resend").hidden = true;
-  phoneInput.placeholder = registering
-    ? "Phone number with country code"
-    : "Username, phone number, or email";
   passwordInput.autocomplete = registering ? "new-password" : "current-password";
   passwordHint.hidden = !registering;
-  authSubmit.textContent = registering
-    ? registrationCodeSent
-      ? "Verify and create account"
-      : smsVerificationRequired
-        ? "Send verification code"
-        : "Create account"
-    : "Sign in";
+  authSubmit.textContent = registering ? "Create account" : "Sign in";
   document.querySelectorAll(".mode-button").forEach((button) => {
     const active = button.dataset.mode === mode;
     button.classList.toggle("active", active);
@@ -236,13 +194,7 @@ registrationAvatarInput.addEventListener("change", () => {
 
 authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  setStatus(authStatus, authMode === "register"
-    ? registrationCodeSent
-      ? "Creating your account…"
-      : smsVerificationRequired
-        ? "Sending verification code…"
-        : "Creating your account…"
-    : "Signing in…");
+  setStatus(authStatus, authMode === "register" ? "Creating your account…" : "Signing in…");
   authSubmit.disabled = true;
   try {
     let data;
@@ -251,30 +203,14 @@ authForm.addEventListener("submit", async (event) => {
       validateImageFile(avatar);
       const formData = new FormData();
       formData.append("username", usernameInput.value.trim());
-      formData.append("phone", phoneInput.value.trim());
       formData.append("password", passwordInput.value);
       formData.append("avatar", avatar);
-      if (registrationCodeSent) {
-        formData.append("verificationCode", document.querySelector("#verification-code").value.trim());
-        data = await request("/register/verify", { method: "POST", formData });
-      } else {
-        data = await request("/register/start", { method: "POST", formData });
-      }
-      if (data.user) {
-        currentUser = data.user;
-        csrfToken = data.csrfToken;
-        passwordInput.value = "";
-        registrationAvatarInput.value = "";
-        await showSignedIn();
-      } else {
-        registrationCodeSent = true;
-        document.querySelector("#verification-code-field").hidden = false;
-        document.querySelector("#verification-code").required = true;
-        document.querySelector("#registration-resend").hidden = false;
-        authSubmit.textContent = "Verify and create account";
-        startRegistrationResendCooldown();
-        setStatus(authStatus, "Code sent. Check your phone and enter it below.", "success");
-      }
+      data = await request("/register/start", { method: "POST", formData });
+      currentUser = data.user;
+      csrfToken = data.csrfToken;
+      passwordInput.value = "";
+      registrationAvatarInput.value = "";
+      await showSignedIn();
     } else {
       data = await request("/login", {
         method: "POST",
@@ -292,26 +228,7 @@ authForm.addEventListener("submit", async (event) => {
   }
 });
 
-document.querySelector("#registration-resend").addEventListener("click", async (event) => {
-  const button = event.currentTarget;
-  button.disabled = true;
-  try {
-    const formData = new FormData();
-    formData.append("username", usernameInput.value.trim());
-    formData.append("phone", phoneInput.value.trim());
-    formData.append("password", passwordInput.value);
-    formData.append("avatar", registrationAvatarInput.files[0]);
-    await request("/register/start", { method: "POST", formData });
-    startRegistrationResendCooldown();
-    setStatus(authStatus, "A new code was sent to your phone.", "success");
-  } catch (error) {
-    setStatus(authStatus, error.message, "error");
-    button.disabled = false;
-  }
-});
-
 async function showSignedIn() {
-  resetRegistrationResendButton();
   authScreen.hidden = true;
   chatScreen.hidden = false;
   document.querySelector("#current-username").textContent = currentUser.username;
@@ -1962,7 +1879,6 @@ async function initialize() {
   try {
     const data = await request("/session");
     csrfToken = data.csrfToken;
-    smsVerificationRequired = data.smsVerificationRequired !== false;
     if (data.user) {
       currentUser = data.user;
       await showSignedIn();

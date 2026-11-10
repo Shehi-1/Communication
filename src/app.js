@@ -127,9 +127,6 @@ function createApp(options = {}) {
   }
 
   const isProduction = options.production ?? process.env.NODE_ENV === "production";
-  const skipSmsVerification =
-    !isProduction &&
-    (options.skipSmsVerification ?? process.env.DEV_SKIP_SMS_VERIFICATION === "1");
   const smsProvider = options.smsProvider || createTwilioSmsProvider();
   let lastCallPruneAt = 0;
   const app = express();
@@ -387,6 +384,10 @@ function createApp(options = {}) {
     return `phone+${phoneNumber.replace(/\D/g, "")}@accounts.invalid`;
   }
 
+  function usernameAccountAlias(username) {
+    return `${username.trim().toLowerCase()}@accounts.invalid`;
+  }
+
   function phoneCodeHash(phoneNumber, purpose, code) {
     return crypto
       .createHmac("sha256", secret)
@@ -396,10 +397,9 @@ function createApp(options = {}) {
 
   async function createRegisteredAccount({
     username,
-    phoneNumber,
+    phoneNumber = null,
     password,
-    file,
-    verificationCode = null
+    file
   }) {
     const avatar = await normalizeImage(file, { avatar: true });
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -409,9 +409,6 @@ function createApp(options = {}) {
     try {
       db.exec("BEGIN IMMEDIATE");
       transactionStarted = true;
-      if (verificationCode !== null) {
-        checkPhoneCode(phoneNumber, "register", verificationCode);
-      }
       result = db.prepare(
         `INSERT INTO users
           (username, username_key, email, password_hash, avatar_key,
@@ -420,17 +417,12 @@ function createApp(options = {}) {
       ).run(
         username.trim(),
         username.trim().toLowerCase(),
-        phoneAccountAlias(phoneNumber),
+        phoneNumber ? phoneAccountAlias(phoneNumber) : usernameAccountAlias(username),
         passwordHash,
         avatarKey,
         phoneNumber,
-        verificationCode === null ? null : new Date().toISOString()
+        null
       );
-      if (verificationCode !== null) {
-        db.prepare(
-          "DELETE FROM phone_verifications WHERE phone_number = ? AND purpose = 'register'"
-        ).run(phoneNumber);
-      }
       db.exec("COMMIT");
       transactionStarted = false;
     } catch (error) {
@@ -599,8 +591,7 @@ function createApp(options = {}) {
       res.set("Cache-Control", "no-store");
       res.json({
         user: user ? safeUser(user) : null,
-        csrfToken: req.session.csrfToken,
-        smsVerificationRequired: !skipSmsVerification
+        csrfToken: req.session.csrfToken
       });
     })
   );
@@ -615,56 +606,13 @@ function createApp(options = {}) {
         throw new HttpError(400, "Choose a profile picture to create your account.");
       }
       validateCredentials({ username, password });
-      const phoneNumber = normalizePhone(phone);
+      const phoneNumber = typeof phone === "string" && phone.trim()
+        ? normalizePhone(phone.trim())
+        : null;
       if (
         db.prepare("SELECT id FROM users WHERE username_key = ?").get(username.toLowerCase()) ||
-        db.prepare("SELECT id FROM users WHERE phone_number = ?").get(phoneNumber)
-      ) {
-        throw new HttpError(409, "That username or phone number is already registered.");
-      }
-      if (skipSmsVerification) {
-        const userId = await createRegisteredAccount({
-          username,
-          phoneNumber,
-          password,
-          file: req.file
-        });
-        const csrfToken = await setAuthenticatedSession(req, userId);
-        res.status(201).json({
-          user: {
-            id: userId,
-            username: username.trim(),
-            avatarUrl: `/api/users/${userId}/avatar`
-          },
-          csrfToken,
-          phoneVerified: false
-        });
-        return;
-      }
-      await normalizeImage(req.file, { avatar: true });
-      await sendPhoneCode(phoneNumber, "register");
-      res.status(202).json({ message: "Verification code sent." });
-    })
-  );
-
-  api.post(
-    "/register/verify",
-    requireCsrf,
-    uploadProfile.single("avatar"),
-    asyncRoute(async (req, res) => {
-      const { username, phone, password, verificationCode } = req.body || {};
-      if (!req.file) {
-        throw new HttpError(400, "Choose a profile picture to create your account.");
-      }
-      validateCredentials({ username, password });
-      const phoneNumber = normalizePhone(phone);
-      if (typeof verificationCode !== "string" || !/^\d{6}$/.test(verificationCode)) {
-        throw new HttpError(400, "Enter the 6-digit verification code.");
-      }
-      checkPhoneCode(phoneNumber, "register", verificationCode);
-      if (
-        db.prepare("SELECT id FROM users WHERE username_key = ?").get(username.toLowerCase()) ||
-        db.prepare("SELECT id FROM users WHERE phone_number = ?").get(phoneNumber)
+        (phoneNumber &&
+          db.prepare("SELECT id FROM users WHERE phone_number = ?").get(phoneNumber))
       ) {
         throw new HttpError(409, "That username or phone number is already registered.");
       }
@@ -672,8 +620,7 @@ function createApp(options = {}) {
         username,
         phoneNumber,
         password,
-        file: req.file,
-        verificationCode
+        file: req.file
       });
       const csrfToken = await setAuthenticatedSession(req, userId);
       res.status(201).json({

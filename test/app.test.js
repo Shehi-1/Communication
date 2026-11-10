@@ -68,30 +68,14 @@ async function createClient(url = baseUrl) {
     csrfToken = initial.data.csrfToken;
     const formData = new FormData();
     formData.append("username", username);
-    formData.append("phone", phone);
+    if (phone) formData.append("phone", phone);
     formData.append("password", password);
     formData.append("avatar", await avatar, "avatar.png");
-    const result = await call("/register/start", {
-      method: "POST",
-      formData
-    });
-    return result;
-  }
-
-  async function verifyRegistration(username, phone = phoneFor(username), password = "correct-horse-battery-42", verificationCode = smsCodes.get(phone), avatar = createPng()) {
-    const formData = new FormData();
-    formData.append("username", username);
-    formData.append("phone", phone);
-    formData.append("password", password);
-    formData.append("verificationCode", verificationCode);
-    formData.append("avatar", await avatar, "avatar.png");
-    return call("/register/verify", { method: "POST", formData });
+    return call("/register/start", { method: "POST", formData });
   }
 
   async function register(username, phone = phoneFor(username), password = "correct-horse-battery-42") {
-    const started = await startRegistration(username, phone, password);
-    if (started.response.status !== 202) return started;
-    return verifyRegistration(username, phone, password);
+    return startRegistration(username, phone, password);
   }
 
   async function login(identifier, password = "correct-horse-battery-42") {
@@ -111,7 +95,7 @@ async function createClient(url = baseUrl) {
     });
   }
 
-  return { call, download, login, register, startRegistration, verifyRegistration };
+  return { call, download, login, register, startRegistration };
 }
 
 function phoneFor(username) {
@@ -184,64 +168,6 @@ test("registration validates input and returns no private account fields", async
   assert.match(stored.password_hash, /^\$2[aby]\$12\$/);
 });
 
-test("SMS can be skipped in development but never in production", async () => {
-  const developmentApp = createApp({
-    dbPath: path.join(tempDir, "skip-sms.sqlite"),
-    mediaDir: path.join(tempDir, "skip-sms-media"),
-    sessionSecret: "a-test-only-session-secret-that-is-long-enough",
-    skipSmsVerification: true,
-    production: false
-  });
-  const developmentServer = developmentApp.listen(0, "127.0.0.1");
-  await new Promise((resolve) => developmentServer.once("listening", resolve));
-  const developmentUrl = `http://127.0.0.1:${developmentServer.address().port}`;
-  try {
-    const client = await createClient(developmentUrl);
-    const session = await client.call("/session");
-    assert.equal(session.data.smsVerificationRequired, false);
-    const registration = await client.startRegistration(
-      "sms_skipped",
-      phoneFor("sms_skipped")
-    );
-    assert.equal(registration.response.status, 201);
-    assert.equal(registration.data.phoneVerified, false);
-    assert.equal(registration.data.user.username, "sms_skipped");
-    assert.equal(
-      developmentApp.locals.db
-        .prepare("SELECT phone_verified_at FROM users WHERE id = ?")
-        .get(registration.data.user.id).phone_verified_at,
-      null
-    );
-  } finally {
-    await new Promise((resolve, reject) => {
-      developmentServer.close((error) => (error ? reject(error) : resolve()));
-    });
-    developmentApp.locals.db.close();
-  }
-
-  const productionApp = createApp({
-    dbPath: path.join(tempDir, "production-sms.sqlite"),
-    mediaDir: path.join(tempDir, "production-sms-media"),
-    sessionSecret: "a-test-only-session-secret-that-is-long-enough",
-    skipSmsVerification: true,
-    production: true
-  });
-  const productionServer = productionApp.listen(0, "127.0.0.1");
-  await new Promise((resolve) => productionServer.once("listening", resolve));
-  try {
-    const response = await fetch(
-      `http://127.0.0.1:${productionServer.address().port}/api/session`
-    );
-    const session = await response.json();
-    assert.equal(session.smsVerificationRequired, true);
-  } finally {
-    await new Promise((resolve, reject) => {
-      productionServer.close((error) => (error ? reject(error) : resolve()));
-    });
-    productionApp.locals.db.close();
-  }
-});
-
 test("registration requires a valid image and profile pictures can be changed privately", async () => {
   const client = await createClient();
   const initial = await client.call("/session");
@@ -307,98 +233,29 @@ test("authentication uses a generic failure and creates an authenticated session
   assert.equal((await emailLogin.login(bobEmail)).response.status, 200);
 });
 
-test("phone verification gates account creation and enforces expiry, attempt, and resend limits", async () => {
-  const phone = phoneFor("sms_verified");
-  const client = await createClient();
-  const started = await client.startRegistration("sms_verified", phone);
-  assert.equal(started.response.status, 202);
-  assert.equal(
-    app.locals.db.prepare("SELECT COUNT(*) AS count FROM users WHERE phone_number = ?").get(phone).count,
-    0
-  );
-  assert.equal(started.data.message, "Verification code sent.");
-
-  const created = await client.verifyRegistration("sms_verified", phone, undefined, "000000");
-  assert.equal(created.response.status, 400);
-  const verified = await client.verifyRegistration("sms_verified", phone);
-  assert.equal(verified.response.status, 201);
-
-  const expiredPhone = phoneFor("sms_expired");
-  const expiredClient = await createClient();
-  await expiredClient.startRegistration("sms_expired", expiredPhone);
-  app.locals.db.prepare(
-    "UPDATE phone_verifications SET expires_at = ? WHERE phone_number = ? AND purpose = 'register'"
-  ).run(Date.now() - 1, expiredPhone);
-  const expired = await expiredClient.verifyRegistration("sms_expired", expiredPhone);
-  assert.equal(expired.response.status, 400);
-  assert.match(expired.data.error, /expired/i);
-
-  const limitedPhone = phoneFor("sms_attempts");
-  const limitedClient = await createClient();
-  await limitedClient.startRegistration("sms_attempts", limitedPhone);
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const wrong = await limitedClient.verifyRegistration("sms_attempts", limitedPhone, undefined, "000000");
-    assert.equal(wrong.response.status, 400);
-  }
-  const tooManyAttempts = await limitedClient.verifyRegistration(
-    "sms_attempts", limitedPhone, undefined, "000000"
-  );
-  assert.equal(tooManyAttempts.response.status, 429);
-
-  const resendPhone = phoneFor("sms_resend");
-  const resendClient = await createClient();
-  for (let send = 0; send < 3; send += 1) {
-    const result = await resendClient.startRegistration("sms_resend", resendPhone);
-    assert.equal(result.response.status, 202);
-    app.locals.db.prepare(
-      "UPDATE phone_verifications SET last_sent_at = ? WHERE phone_number = ? AND purpose = 'register'"
-    ).run(Date.now() - 61_000, resendPhone);
-  }
-  const resendLimit = await resendClient.startRegistration("sms_resend", resendPhone);
-  assert.equal(resendLimit.response.status, 429);
-});
-
-test("failed SMS sends do not consume cooldowns or invalidate an existing code", async () => {
-  const phone = phoneFor("sms_config_error");
+test("accounts can be created with only a username and password without SMS verification", async () => {
   const client = await createClient();
   smsUnavailable = true;
   try {
-    const result = await client.startRegistration("sms_config_error", phone);
-    assert.equal(result.response.status, 503);
-    assert.match(result.data.error, /not configured/i);
+    const result = await client.register("username_only", null);
+    assert.equal(result.response.status, 201);
+    assert.equal(result.data.user.username, "username_only");
+    const stored = app.locals.db
+      .prepare("SELECT email, phone_number, phone_verified_at FROM users WHERE id = ?")
+      .get(result.data.user.id);
+    assert.equal(stored.email, "username_only@accounts.invalid");
+    assert.equal(stored.phone_number, null);
+    assert.equal(stored.phone_verified_at, null);
     assert.equal(
-      app.locals.db.prepare("SELECT COUNT(*) AS count FROM users WHERE phone_number = ?").get(phone).count,
+      app.locals.db.prepare("SELECT COUNT(*) AS count FROM phone_verifications").get().count,
       0
     );
   } finally {
     smsUnavailable = false;
   }
-  const retry = await client.startRegistration("sms_config_error", phone);
-  assert.equal(retry.response.status, 202);
-
-  const resendPhone = phoneFor("sms_delivery_error");
-  const resendClient = await createClient();
-  const initial = await resendClient.startRegistration("sms_delivery_error", resendPhone);
-  assert.equal(initial.response.status, 202);
-  const originalCode = smsCodes.get(resendPhone);
-  app.locals.db.prepare(
-    "UPDATE phone_verifications SET last_sent_at = ? WHERE phone_number = ? AND purpose = 'register'"
-  ).run(Date.now() - 61_000, resendPhone);
-  smsDeliveryUnavailable = true;
-  try {
-    const failedResend = await resendClient.startRegistration("sms_delivery_error", resendPhone);
-    assert.equal(failedResend.response.status, 502);
-    assert.match(failedResend.data.error, /could not be sent/i);
-  } finally {
-    smsDeliveryUnavailable = false;
-  }
-  const verified = await resendClient.verifyRegistration(
-    "sms_delivery_error",
-    resendPhone,
-    undefined,
-    originalCode
-  );
-  assert.equal(verified.response.status, 201);
+  const signedIn = await (await createClient()).login("username_only");
+  assert.equal(signedIn.response.status, 200);
+  assert.equal(signedIn.data.user.username, "username_only");
 });
 
 test("account settings are private and sensitive changes require verification", async () => {
