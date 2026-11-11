@@ -134,12 +134,22 @@ async function storeMedia(mediaDir, buffer, extension) {
       ? "image/webp"
       : extension === "wav"
         ? "audio/wav"
-        : undefined;
-    const blob = await vercelBlob.put(`media/${key}`, buffer, {
-      access: "public",
-      contentType
-    });
-    return `blob:${blob.url}`;
+        : extension === "webm"
+          ? "audio/webm"
+          : extension === "ogg"
+            ? "audio/ogg"
+            : undefined;
+    try {
+      const blob = await vercelBlob.put(`media/${key}`, buffer, {
+        access: "public",
+        contentType,
+        token: process.env.BLOB_READ_WRITE_TOKEN
+      });
+      return `blob:${blob.url}`;
+    } catch (blobError) {
+      console.error("Blob storage error:", blobError.message || blobError);
+      throw blobError;
+    }
   }
   await fs.mkdir(mediaDir, { recursive: true, mode: 0o700 });
   await fs.writeFile(path.join(mediaDir, key), buffer, { flag: "wx", mode: 0o600 });
