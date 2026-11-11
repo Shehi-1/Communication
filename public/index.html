@@ -4,14 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f5f7f8">
-    <title>Closeby — private chat</title>
+    <title>DBTCONNECT — private chat</title>
     <link rel="stylesheet" href="/styles.css">
     <script src="/app.js" defer></script>
   </head>
   <body>
     <main id="auth-screen" class="auth-screen">
       <section class="auth-card" aria-labelledby="auth-heading">
-        <div class="brand-mark" aria-hidden="true">c</div>
+        <div class="brand-mark" aria-hidden="true">D</div>
         <p class="eyebrow">A little space for your people</p>
         <h1 id="auth-heading">Keep in close touch.</h1>
         <p class="muted">Private, simple messages between friends.</p>
@@ -31,8 +31,8 @@
           </label>
           <label class="field">
             <span>Password</span>
-            <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="12" maxlength="72" required>
-            <small id="password-hint" hidden>Use at least 12 characters.</small>
+            <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="5" maxlength="72" required>
+            <small id="password-hint" hidden>Use at least 5 characters (letters or numbers).</small>
           </label>
           <label id="registration-avatar-field" class="field" hidden>
             <span>Profile picture</span>
@@ -43,12 +43,14 @@
           <button id="auth-submit" class="button primary wide" type="submit">Sign in</button>
           <p id="auth-status" class="form-status" role="status" aria-live="polite"></p>
         </form>
+        <p class="auth-powered-by">powered by Abduurazak_Muktar</p>
       </section>
     </main>
 
     <main id="chat-screen" class="chat-screen" hidden>
       <header class="topbar">
-        <a class="brand" href="/" aria-label="Closeby home"><span class="brand-mark small" aria-hidden="true">c</span>closeby</a>
+        <a class="brand" href="/" aria-label="DBTCONNECT home"><span class="brand-mark small" aria-hidden="true">D</span>DBTCONNECT</a>
+        <span class="topbar-powered-by">powered by Abduurazak_Muktar</span>
         <div class="account-tools">
           <button id="profile-button" class="profile-button" type="button" aria-label="Profile settings">
             <span id="current-avatar" class="avatar avatar-large" aria-hidden="true">•</span>
@@ -291,8 +293,8 @@
         </label>
         <label class="field">
           <span>New password</span>
-          <input id="password-new" type="password" autocomplete="new-password" minlength="12" maxlength="72" required>
-          <small>At least 12 characters.</small>
+          <input id="password-new" type="password" autocomplete="new-password" minlength="5" maxlength="72" required>
+          <small>At least 5 characters (letters or numbers).</small>
         </label>
         <button class="button quiet" type="submit">Update password</button>
       </form>

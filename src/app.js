@@ -74,10 +74,10 @@ function validateCredentials({ username, password }) {
 function validatePassword(password) {
   if (
     typeof password !== "string" ||
-    password.length < 12 ||
+    password.length < 5 ||
     Buffer.byteLength(password, "utf8") > 72
   ) {
-    throw new HttpError(400, "Password must be at least 12 characters and no more than 72 bytes.");
+    throw new HttpError(400, "Password must be at least 5 characters and no more than 72 bytes.");
   }
 }
 
