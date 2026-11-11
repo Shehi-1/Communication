@@ -168,15 +168,17 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 .form-status.error, .small-status.error, .message-status.error { color: var(--danger); }
 .form-status.success, .small-status.success { color: var(--success); }
 
-.chat-screen { min-height: 100vh; }
+.chat-screen { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .topbar {
   display: flex;
-  height: 72px;
+  flex: 0 0 auto;
+  height: 60px;
   align-items: center;
   justify-content: space-between;
-  padding: 0 max(28px, calc((100vw - 1260px) / 2));
+  padding: 0 24px;
   border-bottom: 1px solid var(--line);
   background: var(--paper);
+  z-index: 10;
 }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); font-size: 17px; font-weight: 800; letter-spacing: -.04em; text-decoration: none; }
 .brand-mark.small { width: 31px; height: 31px; border-radius: 10px; font-size: 18px; }
@@ -208,16 +210,17 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 .status-card-detail { color: var(--muted); font-size: 9px; }
 .workspace {
   display: grid;
-  width: min(100% - 48px, 1260px);
-  height: min(870px, calc(100vh - 120px));
+  width: 100%;
+  height: calc(100vh - 60px);
   min-height: 520px;
-  grid-template-columns: 330px minmax(0, 1fr);
-  margin: 14px auto;
+  grid-template-columns: 300px minmax(0, 1fr);
+  margin: 0 auto;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 15px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
   background: var(--paper);
-  box-shadow: 0 12px 40px #263b3910;
+  box-shadow: none;
 }
 
 .sidebar { display: flex; min-height: 0; flex-direction: column; border-right: 1px solid var(--line); background: var(--paper); overflow: hidden; }
@@ -451,7 +454,7 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 @media (max-width: 720px) {
-  .topbar { height: 60px; padding: 0 16px; }
+  .topbar { padding: 0 16px; }
   .status-section { padding: 10px 12px 6px; }
   .status-heading { flex-direction: row; gap: 8px; }
   .status-heading p { display: none; }
@@ -461,7 +464,7 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
   .status-card-avatar { width: 40px; height: 40px; }
   .status-card-avatar .avatar { width: 32px; height: 32px; }
   .status-card-name { max-width: 52px; }
-  .workspace { width: 100%; height: calc(100vh - 60px); min-height: 0; grid-template-columns: 1fr; margin: 0; border: 0; border-radius: 0; }
+  .workspace { width: 100%; height: calc(100vh - 60px); min-height: 0; grid-template-columns: 1fr; margin: 0; border: 0; border-radius: 0; border-top: 0; }
   .sidebar { display: grid; min-height: 0; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; border-right: 0; }
   .status-section { grid-column: 1 / -1; }
   .search-section { grid-column: 1 / -1; padding: 14px 16px; }
@@ -512,7 +515,7 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 }
 
 @media (max-height: 640px) and (min-width: 721px) {
-  .workspace { height: calc(100vh - 90px); min-height: 0; margin-block: 10px; }
+  .workspace { height: calc(100vh - 60px); min-height: 0; }
   .messages { padding-block: 14px; }
 }
 
