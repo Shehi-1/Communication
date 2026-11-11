@@ -863,13 +863,17 @@ function statusTimeRemaining(value) {
 function renderStatusFeed(statuses) {
   statusFeed.replaceChildren();
   for (const status of statuses) {
-    const item = document.createElement("button");
-    item.type = "button";
+    const isOwner = Number(status.user.id) === Number(currentUser?.id);
+    const item = document.createElement("div");
     item.className = "status-card";
     item.setAttribute("role", "listitem");
-    item.setAttribute(
+
+    const openButton = document.createElement("button");
+    openButton.type = "button";
+    openButton.className = "status-card-open";
+    openButton.setAttribute(
       "aria-label",
-      `${status.user.id === currentUser.id ? "Your" : `${status.user.username}'s`} status, posted ${statusTimeAgo(status.createdAt)}`
+      `${isOwner ? "Your" : `${status.user.username}'s`} status, posted ${statusTimeAgo(status.createdAt)}`
     );
     const avatarRing = document.createElement("span");
     avatarRing.className = "status-card-avatar";
@@ -878,14 +882,39 @@ function renderStatusFeed(statuses) {
     avatarRing.append(avatar);
     const name = document.createElement("span");
     name.className = "status-card-name";
-    name.textContent = status.user.id === currentUser.id ? "Your status" : status.user.username;
+    name.textContent = isOwner ? "Your status" : status.user.username;
     const detail = document.createElement("span");
     detail.className = "status-card-detail";
-    detail.textContent = status.user.id === currentUser.id
+    detail.textContent = isOwner
       ? `${status.viewerCount || 0} views`
       : statusTimeAgo(status.createdAt);
-    item.append(avatarRing, name, detail);
-    item.addEventListener("click", () => openStatus(status.id));
+    openButton.append(avatarRing, name, detail);
+    openButton.addEventListener("click", () => openStatus(status.id));
+
+    item.append(openButton);
+
+    if (isOwner) {
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "status-card-delete";
+      deleteBtn.setAttribute("aria-label", "Delete this status");
+      deleteBtn.title = "Delete status";
+      deleteBtn.textContent = "🗑";
+      deleteBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this status?")) return;
+        deleteBtn.disabled = true;
+        try {
+          await request(`/statuses/${status.id}`, { method: "DELETE", authenticated: true });
+          await refreshStatuses();
+        } catch (err) {
+          alert(`Could not delete status: ${err.message}`);
+          deleteBtn.disabled = false;
+        }
+      });
+      item.append(deleteBtn);
+    }
+
     statusFeed.append(item);
   }
   setStatus(
