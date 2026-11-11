@@ -1,40 +1,40 @@
 :root {
-  color-scheme: light;
-  --ink: #30243d;
-  --muted: #70647f;
-  --soft: #998da8;
-  --line: #ded4e9;
-  --paper: #f8f4fc;
-  --canvas: #e8def1;
-  --surface-soft: #f0e9f7;
-  --surface-hover: #e8def2;
-  --input: #fff;
-  --teal: #75529d;
-  --teal-dark: #5e3d84;
-  --teal-pale: #e9def3;
+  color-scheme: dark;
+  --ink: #f0f2f5;
+  --muted: #8696a0;
+  --soft: #667781;
+  --line: #222e35;
+  --paper: #111b21;
+  --canvas: #0c1317;
+  --surface-soft: #0b141a;
+  --surface-hover: #202c33;
+  --input: #2a3942;
+  --teal: #00a884;
+  --teal-dark: #008069;
+  --teal-pale: #1f3531;
   --coral: #bd765f;
-  --success: #34745d;
-  --danger: #a44256;
-  font-family: "DM Sans", "Segoe UI", sans-serif;
+  --success: #25d366;
+  --danger: #ef4444;
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-synthesis: none;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ink: #f2eafb;
-  --muted: #c2b2d3;
-  --soft: #9a88ac;
-  --line: #40334f;
-  --paper: #261d31;
-  --canvas: #17111f;
-  --surface-soft: #21182c;
-  --surface-hover: #342741;
-  --input: #21182b;
-  --teal: #9572c0;
-  --teal-dark: #d3b8f2;
-  --teal-pale: #38294b;
-  --success: #8bd1ae;
-  --danger: #f1a4b2;
+  --ink: #f0f2f5;
+  --muted: #8696a0;
+  --soft: #667781;
+  --line: #222e35;
+  --paper: #111b21;
+  --canvas: #0c1317;
+  --surface-soft: #0b141a;
+  --surface-hover: #202c33;
+  --input: #2a3942;
+  --teal: #00a884;
+  --teal-dark: #008069;
+  --teal-pale: #1f3531;
+  --success: #25d366;
+  --danger: #ef4444;
 }
 
 * { box-sizing: border-box; }
@@ -287,22 +287,33 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 .call-history ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .call-history li { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 8px; color: var(--muted); background: var(--surface-soft); font-size: 10px; }
 .call-history li.missed { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--paper)); }
-.messages { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 12px; overflow-y: auto; padding: 24px clamp(18px, 5vw, 60px); }
-.date-divider { align-self: center; margin: 3px 0 8px; color: var(--soft); font-size: 10px; }
+.messages {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 24px clamp(18px, 5vw, 60px);
+  background-color: #0b141a;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.date-divider { align-self: center; margin: 3px 0 8px; color: var(--soft); font-size: 10px; background: rgba(32, 44, 51, 0.85); padding: 4px 12px; border-radius: 8px; }
 .message { display: grid; max-width: min(75%, 480px); flex: 0 0 auto; gap: 4px; align-self: flex-start; }
 .message.mine { align-self: flex-end; }
-.message-bubble { padding: 11px 14px; border: 1px solid var(--line); border-radius: 4px 14px 14px; background: var(--paper); color: var(--ink); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
-.message.mine .message-bubble { border-color: var(--teal); border-radius: 14px 4px 14px 14px; color: white; background: var(--teal); }
-.message-media { display: grid; gap: 7px; padding: 5px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
-.message.mine .message-media { border-color: var(--teal-pale); }
+.message-bubble { padding: 10px 14px; border: 1px solid #202c33; border-radius: 4px 14px 14px; background: #202c33; color: #e9edef; font-size: 13.5px; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+.message.mine .message-bubble { border-color: #005c4b; border-radius: 14px 4px 14px 14px; color: #e9edef; background: #005c4b; }
+.message-media { display: grid; gap: 7px; padding: 5px; border: 1px solid #202c33; border-radius: 12px; background: #202c33; }
+.message.mine .message-media { border-color: #005c4b; background: #005c4b; }
 .message-image { display: block; max-width: min(100%, 440px); max-height: 360px; border-radius: 8px; object-fit: contain; }
 .message-audio { width: min(300px, 70vw); height: 40px; }
 .message-duration { padding: 0 7px 4px; color: var(--muted); font-size: 10px; }
 .message-meta { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
-.message-time { color: var(--soft); font-size: 9px; }
-.delivery-status { color: var(--muted); font-size: 9px; }
-.delivery-status.status-delivered { color: var(--teal-dark); }
-.delivery-status.status-read { color: var(--teal); font-weight: 700; }
+.message-time { color: var(--muted); font-size: 10px; }
+.delivery-status { color: var(--muted); font-size: 10px; }
+.delivery-status.status-delivered { color: var(--muted); }
+.delivery-status.status-read { color: #53bdeb; font-weight: 700; }
 .messages-empty { align-self: center; margin: auto; color: var(--soft); font-size: 12px; text-align: center; }
 .message-status { padding: 0 22px; }
 .message-form { display: block; padding: 10px 22px 6px; border-top: 1px solid var(--line); background: var(--paper); }
@@ -462,26 +473,26 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 @media (prefers-color-scheme: dark) {
   :root[data-theme="system"] {
     color-scheme: dark;
-    --ink: #f2eafb;
-    --muted: #c2b2d3;
-    --soft: #9a88ac;
-    --line: #40334f;
-    --paper: #261d31;
-    --canvas: #17111f;
-    --surface-soft: #21182c;
-    --surface-hover: #342741;
-    --input: #21182b;
-    --teal: #9572c0;
-    --teal-dark: #d3b8f2;
-    --teal-pale: #38294b;
-    --success: #8bd1ae;
-    --danger: #f1a4b2;
+    --ink: #f0f2f5;
+    --muted: #8696a0;
+    --soft: #667781;
+    --line: #222e35;
+    --paper: #111b21;
+    --canvas: #0c1317;
+    --surface-soft: #0b141a;
+    --surface-hover: #202c33;
+    --input: #2a3942;
+    --teal: #00a884;
+    --teal-dark: #008069;
+    --teal-pale: #1f3531;
+    --success: #25d366;
+    --danger: #ef4444;
   }
   :root[data-theme="system"] .message.mine .delivery-status.status-read {
-    color: #d7dfff;
+    color: #53bdeb;
   }
 }
 
-:root[data-theme="dark"] .message.mine .delivery-status.status-read { color: #d7dfff; }
+:root[data-theme="dark"] .message.mine .delivery-status.status-read { color: #53bdeb; }
 :root[data-theme="dark"] .auth-screen,
 :root[data-theme="system"] .auth-screen { background: var(--canvas); }
