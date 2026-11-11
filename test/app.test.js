@@ -917,11 +917,14 @@ test("mutating routes require a valid CSRF token", async () => {
   });
   assert.equal(crossInstanceResponse.status, 400);
 
+  const tamperedToken = initial.data.csrfToken.endsWith("0")
+    ? `${initial.data.csrfToken.slice(0, -1)}1`
+    : `${initial.data.csrfToken.slice(0, -1)}0`;
   const tamperedResponse = await fetch(`${baseUrl}/api/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-CSRF-Token": `${initial.data.csrfToken.slice(0, -1)}0`
+      "X-CSRF-Token": tamperedToken
     },
     body: JSON.stringify({})
   });

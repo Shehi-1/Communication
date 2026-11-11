@@ -667,14 +667,24 @@ function createApp(options = {}) {
         throw new HttpError(429, "Too many sign-in attempts. Try again later.");
       }
       const trimmedIdentifier = identifier.trim();
-      const identifierColumn = trimmedIdentifier.includes("@")
-        ? "email"
-        : trimmedIdentifier.startsWith("+")
-          ? "phone_number"
-          : "username_key";
+      let identifierColumn = "username_key";
       let normalizedIdentifier = trimmedIdentifier.toLowerCase();
-      if (identifierColumn === "phone_number") {
-        normalizedIdentifier = normalizePhone(trimmedIdentifier);
+      if (trimmedIdentifier.includes("@")) {
+        identifierColumn = "email";
+      } else {
+        const potentialPhone = trimmedIdentifier.startsWith("+")
+          ? trimmedIdentifier
+          : /^\d[\d\s().-]{7,}$/.test(trimmedIdentifier)
+            ? `+${trimmedIdentifier.replace(/\D/g, "")}`
+            : null;
+        if (potentialPhone) {
+          try {
+            normalizedIdentifier = normalizePhone(potentialPhone);
+            identifierColumn = "phone_number";
+          } catch {
+            normalizedIdentifier = trimmedIdentifier.toLowerCase();
+          }
+        }
       }
       const user = await db.prepare(
         `SELECT id, username, password_hash, avatar_key FROM users
@@ -700,7 +710,7 @@ function createApp(options = {}) {
   api.post(
     "/logout",
     ...requireAuthAndCsrf,
-    async (req, res, next) => {
+    asyncRoute(async (req, res, next) => {
       const activeCalls = await db.prepare(
         `SELECT * FROM calls
          WHERE status IN ('ringing', 'connecting', 'connected')
@@ -717,7 +727,7 @@ function createApp(options = {}) {
         });
         res.status(204).end();
       });
-    }
+    })
   );
 
   api.post(
@@ -1276,10 +1286,10 @@ function createApp(options = {}) {
   api.post(
     "/presence",
     ...requireAuthAndCsrf,
-    async (req, res) => {
+    asyncRoute(async (req, res) => {
       await refreshCallLiveness(req.session.userId);
       res.status(204).end();
-    }
+    })
   );
 
   api.post(
@@ -1378,7 +1388,7 @@ function createApp(options = {}) {
     "/conversations/:userId/calls",
     requireAuth,
     authorizeConversation,
-    async (req, res) => {
+    asyncRoute(async (req, res) => {
       const otherId = Number(req.params.userId);
       const rows = await db.prepare(
         `SELECT id FROM calls
@@ -1389,13 +1399,13 @@ function createApp(options = {}) {
       res.json({
         calls: await Promise.all(rows.map((row) => getCallSummary(row.id, req.session.userId)))
       });
-    }
+    })
   );
 
   api.post(
     "/calls/:callId/answer",
     ...requireAuthAndCsrf,
-    async (req, res) => {
+    asyncRoute(async (req, res) => {
       const call = await getCallForParticipant(req.params.callId, req.session.userId);
       await requireCallConnection(call);
       if (call.recipient_id !== req.session.userId || call.status !== "ringing") {
@@ -1418,13 +1428,13 @@ function createApp(options = {}) {
       ).run(answeredAt, call.id);
       await recordCallEvent(call.id, null, "state", { status: "connecting" });
       res.json({ call: await getCallSummary(call.id, req.session.userId) });
-    }
+    })
   );
 
   api.post(
     "/calls/:callId/connected",
     ...requireAuthAndCsrf,
-    async (req, res) => {
+    asyncRoute(async (req, res) => {
       const call = await getCallForParticipant(req.params.callId, req.session.userId);
       await requireCallConnection(call);
       if (call.status === "connecting") {
@@ -1448,13 +1458,13 @@ function createApp(options = {}) {
       }
       await updatePresence(req.session.userId);
       res.json({ call: await getCallSummary(call.id, req.session.userId) });
-    }
+    })
   );
 
   api.post(
     "/calls/:callId/decline",
     ...requireAuthAndCsrf,
-    async (req, res) => {
+    asyncRoute(async (req, res) => {
       const call = await getCallForParticipant(req.params.callId, req.session.userId);
       await requireCallConnection(call);
       if (call.recipient_id !== req.session.userId || call.status !== "ringing") {
@@ -1466,13 +1476,13 @@ function createApp(options = {}) {
       }
       await setCallStatus(call, "declined");
       res.status(204).end();
-    }
+    })
   );
 
   api.post(
     "/calls/:callId/end",
     ...requireAuthAndCsrf,
-    async (req, res) => {
+    asyncRoute(async (req, res) => {
       const call = await getCallForParticipant(req.params.callId, req.session.userId);
       await requireCallConnection(call);
       if (req.body?.connectionError !== undefined &&
@@ -1481,13 +1491,13 @@ function createApp(options = {}) {
       }
       await setCallStatus(call, req.body?.connectionError ? "connection_error" : "ended");
       res.status(204).end();
-    }
+    })
   );
 
   api.post(
     "/calls/:callId/signals",
     ...requireAuthAndCsrf,
-    async (req, res) => {
+    asyncRoute(async (req, res) => {
       const call = await getCallForParticipant(req.params.callId, req.session.userId);
       await requireCallConnection(call);
       const { kind, payload } = req.body || {};
@@ -1523,7 +1533,7 @@ function createApp(options = {}) {
       if (signalCount.count >= 256) throw new HttpError(429, "Call signaling limit reached.");
       await recordCallEvent(call.id, req.session.userId, kind, payload);
       res.status(202).json({ accepted: true });
-    }
+    })
   );
 
   api.get(

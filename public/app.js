@@ -499,7 +499,8 @@ function setupPeerConnection(call) {
     }
   };
   callVideoStage.hidden = call.callType !== "video";
-  document.querySelector("#call-video-placeholder").hidden = false;
+  const hasRemoteVideo = Boolean(remoteCallVideo.srcObject?.getVideoTracks?.().some((t) => t.enabled));
+  document.querySelector("#call-video-placeholder").hidden = hasRemoteVideo;
 }
 
 async function flushIceCandidates() {
@@ -1707,7 +1708,11 @@ async function startVoiceRecording() {
   setStatus(messageStatus, "Requesting microphone permission…");
   try {
     recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    recordingContext = new AudioContextConstructor({ sampleRate: 16000 });
+    try {
+      recordingContext = new AudioContextConstructor({ sampleRate: 16000 });
+    } catch {
+      recordingContext = new AudioContextConstructor();
+    }
     await recordingContext.resume();
     recordingSource = recordingContext.createMediaStreamSource(recordingStream);
     recordingProcessor = recordingContext.createScriptProcessor(4096, 1, 1);
