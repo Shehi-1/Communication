@@ -764,6 +764,7 @@ function showContactProfile() {
   contactDialog.showModal();
 }
 
+document.querySelector("#close-chat-button")?.addEventListener("click", closeActiveConversation);
 document.querySelector("#chat-profile-button").addEventListener("click", showContactProfile);
 document.querySelector("#contact-profile-close").addEventListener("click", () => contactDialog.close());
 document.querySelector("#voice-call-button").addEventListener("click", () => startCall("voice"));
@@ -1481,6 +1482,22 @@ function createAvatar(user) {
   fallback.setAttribute("aria-hidden", "true");
   fallback.textContent = user.username.charAt(0).toUpperCase();
   return fallback;
+}
+
+function closeActiveConversation() {
+  activeConversation = null;
+  lastRenderedMessageId = 0;
+  lastStatusSignature = "";
+  if (readReceiptTimer) window.clearTimeout(readReceiptTimer);
+  readReceiptTimer = null;
+  readReceiptObserver?.disconnect();
+  readMarkedIds.clear();
+  readPendingIds.clear();
+  workspace.classList.remove("chat-open");
+  document.querySelector("#active-chat").hidden = true;
+  messagesElement.replaceChildren();
+  setStatus(messageStatus, "");
+  refreshConversations().catch(() => {});
 }
 
 async function openConversation(user) {

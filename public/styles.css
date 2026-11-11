@@ -324,6 +324,8 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 .chat-placeholder p { max-width: 300px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .active-chat { display: flex; min-height: 0; flex: 1; flex-direction: column; }
 .chat-header { display: flex; min-height: 74px; align-items: center; gap: 11px; padding: 14px 22px; border-bottom: 1px solid var(--line); background: var(--paper); }
+.close-chat-button { display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 50%; color: var(--muted); font-size: 16px; flex: 0 0 36px; }
+.close-chat-button:hover { color: var(--ink); background: var(--surface-hover); }
 .chat-profile-button { display: inline-flex; min-width: 0; flex: 1; align-items: center; padding: 8px 10px; border: 0; border-radius: 12px; color: var(--ink); background: transparent; text-align: left; }
 .chat-profile-button:hover { background: var(--surface-hover); }
 .chat-contact-copy { min-width: 0; }
@@ -457,6 +459,7 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 
 @media (max-width: 720px) {
   .topbar { padding: 0 16px; }
+  .topbar-powered-by { display: none; }
   .status-section { padding: 10px 12px 6px; }
   .status-heading { flex-direction: row; gap: 8px; }
   .status-heading p { display: none; }
@@ -467,29 +470,26 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
   .status-card-avatar .avatar { width: 32px; height: 32px; }
   .status-card-name { max-width: 52px; }
   .workspace { width: 100%; height: calc(100vh - 60px); min-height: 0; grid-template-columns: 1fr; margin: 0; border: 0; border-radius: 0; border-top: 0; }
-  .sidebar { display: grid; min-height: 0; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; border-right: 0; }
-  .status-section { grid-column: 1 / -1; }
-  .search-section { grid-column: 1 / -1; padding: 14px 16px; }
+  .sidebar { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; border-right: 0; }
+  .search-section { padding: 14px 16px; }
   .search-section h2 { margin-bottom: 9px; }
-  .people-section { min-height: 0; padding: 14px 12px; overflow: auto; }
-  .people-section + .people-section { border-left: 1px solid var(--line); border-bottom: 0; }
-  .conversations-section { grid-column: 2; }
-  .workspace.chat-open { grid-template-rows: minmax(155px, 31vh) minmax(0, 1fr); }
-  .workspace.chat-open .sidebar { grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr); }
-  .workspace.chat-open .search-section { display: none; }
-  .workspace.chat-open .status-section { display: none; }
-  .workspace.chat-open .conversations-section { display: block; grid-column: 1; border-left: 0; }
-  .workspace.chat-open .people-section:not(.conversations-section) { grid-column: 2; border-left: 1px solid var(--line); }
-  .chat-panel { min-height: 0; border-top: 1px solid var(--line); }
+  .people-section { min-height: 0; padding: 14px 12px; }
+  .people-section + .people-section { border-left: 0; border-top: 1px solid var(--line); }
+  .conversations-section { flex: 1; }
+  .workspace.chat-open .sidebar { display: none; }
+  .workspace.chat-open .chat-panel { display: flex; height: 100%; }
+  .chat-panel { min-height: 0; border-top: 0; }
   .chat-placeholder { padding: 18px; }
   .chat-placeholder h2 { font-size: 16px; }
   .chat-placeholder p { font-size: 12px; }
-  .chat-header { min-height: 60px; padding: 10px 15px; }
+  .chat-header { min-height: 56px; padding: 8px 12px; gap: 6px; }
+  .close-chat-button { width: 32px; height: 32px; flex: 0 0 32px; font-size: 18px; }
+  .chat-profile-button { padding: 4px 6px; }
   .call-actions { gap: 3px; }
-  .call-button { min-height: 34px; padding-inline: 8px; }
+  .call-button { min-height: 32px; padding-inline: 7px; font-size: 11px; }
   .call-history { padding-inline: 12px; }
   .call-video-stage { min-height: 190px; }
-  .messages { padding: 16px; }
+  .messages { padding: 14px 12px; }
   .message-form { padding: 8px 10px 5px; }
   .composer-controls { gap: 2px; }
   .icon-button { width: 34px; }
@@ -503,7 +503,6 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
   .auth-card { padding: 32px 24px 28px; }
   .account-name { display: none; }
   .profile-button { padding-right: 3px; }
-  .workspace.chat-open { grid-template-rows: minmax(140px, 29vh) minmax(0, 1fr); }
   .person-row { padding-inline: 3px; }
   .row-action { padding: 6px 7px; }
 }
