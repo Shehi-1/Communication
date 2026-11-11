@@ -124,7 +124,11 @@ async function validateAudio(file) {
 }
 
 function isBlobEnabled() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN && vercelBlob);
+  const hasToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  const hasLib = Boolean(vercelBlob);
+  if (!hasToken) console.error("BLOB_READ_WRITE_TOKEN is not set - falling back to local filesystem");
+  if (!hasLib) console.error("@vercel/blob module not loaded");
+  return hasToken && hasLib;
 }
 
 async function storeMedia(mediaDir, buffer, extension) {
@@ -145,15 +149,21 @@ async function storeMedia(mediaDir, buffer, extension) {
         contentType,
         token: process.env.BLOB_READ_WRITE_TOKEN
       });
+      console.log("Blob stored successfully:", blob.url);
       return `blob:${blob.url}`;
     } catch (blobError) {
       console.error("Blob storage error:", blobError.message || blobError);
       throw blobError;
     }
   }
-  await fs.mkdir(mediaDir, { recursive: true, mode: 0o700 });
-  await fs.writeFile(path.join(mediaDir, key), buffer, { flag: "wx", mode: 0o600 });
-  return key;
+  try {
+    await fs.mkdir(mediaDir, { recursive: true, mode: 0o700 });
+    await fs.writeFile(path.join(mediaDir, key), buffer, { flag: "wx", mode: 0o600 });
+    return key;
+  } catch (fsError) {
+    console.error("Filesystem storage error:", fsError.message || fsError, "mediaDir:", mediaDir);
+    throw fsError;
+  }
 }
 
 function isBlobKey(key) {
