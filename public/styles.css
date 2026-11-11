@@ -441,7 +441,16 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 .status-viewer-list li { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
 .status-viewer-list li .avatar { width: 28px; height: 28px; font-size: 15px; }
 .status-viewer-list li span:last-child { margin-left: auto; font-size: 10px; }
-.status-delete-button { color: var(--danger) !important; }
+.status-viewer-actions { display: flex; align-items: center; gap: 8px; }
+.status-delete-button {
+  color: var(--danger) !important;
+  background: color-mix(in srgb, var(--danger) 10%, transparent) !important;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.status-delete-button:hover {
+  background: color-mix(in srgb, var(--danger) 20%, transparent) !important;
+}
 .profile-dialog h2 { margin-bottom: 6px; font-size: 19px; }
 .profile-dialog .muted { margin-bottom: 20px; font-size: 12px; }
 .profile-dialog form { display: grid; gap: 12px; }

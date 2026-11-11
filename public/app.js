@@ -952,7 +952,7 @@ async function openStatus(statusId) {
     document.querySelector("#status-viewer-body").textContent = status.body;
     document.querySelector("#status-viewer-expires").textContent =
       `${statusTimeRemaining(status.expiresAt)} · statuses disappear after 24 hours`;
-    const isOwner = status.user.id === currentUser.id;
+    const isOwner = Number(status.user.id) === Number(currentUser?.id);
     if (isOwner) {
       renderStatusViewers(status.viewers || []);
       document.querySelector("#status-viewer-list-section").hidden = false;

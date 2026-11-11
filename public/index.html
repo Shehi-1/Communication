@@ -196,7 +196,10 @@
             <p id="status-viewer-time" class="muted"></p>
           </div>
         </div>
-        <button id="status-viewer-close" class="button quiet" type="button">Close</button>
+        <div class="status-viewer-actions">
+          <button id="status-delete-button" class="button quiet status-delete-button" type="button" hidden>Delete status</button>
+          <button id="status-viewer-close" class="button quiet" type="button">Close</button>
+        </div>
       </div>
       <img id="status-viewer-image" class="status-viewer-image" alt="Status photo" hidden>
       <p id="status-viewer-body" class="status-viewer-body"></p>
@@ -206,9 +209,6 @@
         <ul id="status-viewer-list" class="status-viewer-list"></ul>
         <p id="status-viewer-empty" class="empty-note" hidden>No one has viewed this status yet.</p>
       </section>
-      <div class="dialog-actions">
-        <button id="status-delete-button" class="button quiet status-delete-button" type="button" hidden>Delete my status</button>
-      </div>
       <p id="status-viewer-message" class="form-status" role="status" aria-live="polite"></p>
     </dialog>
 
