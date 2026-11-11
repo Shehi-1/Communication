@@ -3,12 +3,17 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const sharp = require("sharp");
 
+const { Readable } = require("node:stream");
+
 let vercelBlob = null;
 try {
   vercelBlob = require("@vercel/blob");
 } catch {
   vercelBlob = null;
 }
+
+// Automatically detect access mode based on configured environment or dynamic retry
+let cachedBlobAccess = process.env.BLOB_ACCESS || null; // 'public' | 'private'
 
 const IMAGE_TYPES = new Map([
   ["image/png", "png"],
@@ -143,15 +148,41 @@ async function storeMedia(mediaDir, buffer, extension) {
           : extension === "ogg"
             ? "audio/ogg"
             : undefined;
+
+    // Try with cached/preferred access, or default to public then fallback to private
+    const preferredAccess = cachedBlobAccess || "public";
     try {
       const blob = await vercelBlob.put(`media/${key}`, buffer, {
-        access: "public",
+        access: preferredAccess,
         contentType,
         token: process.env.BLOB_READ_WRITE_TOKEN
       });
-      console.log("Blob stored successfully:", blob.url);
+      cachedBlobAccess = preferredAccess;
+      console.log(`Blob stored successfully (${preferredAccess}):`, blob.url);
       return `blob:${blob.url}`;
     } catch (blobError) {
+      const errStr = String(blobError.message || blobError);
+      if (errStr.includes("Cannot use public access on a private store")) {
+        console.warn("Detected private Vercel Blob store, retrying with access: 'private'...");
+        cachedBlobAccess = "private";
+        const blob = await vercelBlob.put(`media/${key}`, buffer, {
+          access: "private",
+          contentType,
+          token: process.env.BLOB_READ_WRITE_TOKEN
+        });
+        console.log("Blob stored successfully (private):", blob.url);
+        return `blob:${blob.url}`;
+      } else if (errStr.includes("Cannot use private access on a public store")) {
+        console.warn("Detected public Vercel Blob store, retrying with access: 'public'...");
+        cachedBlobAccess = "public";
+        const blob = await vercelBlob.put(`media/${key}`, buffer, {
+          access: "public",
+          contentType,
+          token: process.env.BLOB_READ_WRITE_TOKEN
+        });
+        console.log("Blob stored successfully (public):", blob.url);
+        return `blob:${blob.url}`;
+      }
       console.error("Blob storage error:", blobError.message || blobError);
       throw blobError;
     }
@@ -199,6 +230,26 @@ async function removeMedia(mediaDir, key) {
   }
 }
 
+async function streamBlob(urlOrKey, res) {
+  if (!isBlobEnabled()) return false;
+  const targetUrl = isBlobKey(urlOrKey) ? blobUrl(urlOrKey) : urlOrKey;
+  try {
+    const { stream, blob } = await vercelBlob.get(targetUrl, {
+      access: cachedBlobAccess || "private",
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
+    if (blob?.contentType) {
+      res.setHeader("Content-Type", blob.contentType);
+    }
+    const nodeStream = Readable.fromWeb(stream);
+    nodeStream.pipe(res);
+    return true;
+  } catch (error) {
+    console.error("Failed to stream private blob:", error.message || error);
+    return false;
+  }
+}
+
 module.exports = {
   MediaValidationError,
   normalizeImage,
@@ -207,5 +258,6 @@ module.exports = {
   mediaPath,
   removeMedia,
   isBlobKey,
-  blobUrl
+  blobUrl,
+  streamBlob
 };

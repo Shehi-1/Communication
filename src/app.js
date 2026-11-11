@@ -21,7 +21,8 @@ const {
   mediaPath,
   removeMedia,
   isBlobKey,
-  blobUrl
+  blobUrl,
+  streamBlob
 } = require("./media");
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,24}$/;
@@ -931,7 +932,17 @@ function createApp(options = {}) {
       if (!user?.avatar_key) throw new HttpError(404, "Profile picture not found.");
       if (userId !== req.session.userId) await requireConnection(req.session.userId, userId);
       if (isBlobKey(user.avatar_key)) {
-        return res.redirect(302, blobUrl(user.avatar_key));
+        const url = blobUrl(user.avatar_key);
+        if (url.includes(".private.blob.vercel-storage.com")) {
+          res.set({
+            "Cache-Control": "private, no-store",
+            "Content-Disposition": 'inline; filename="profile.webp"',
+            "X-Content-Type-Options": "nosniff"
+          });
+          const streamed = await streamBlob(user.avatar_key, res);
+          if (streamed) return;
+        }
+        return res.redirect(302, url);
       }
       res.set({
         "Cache-Control": "private, no-store",
@@ -1785,7 +1796,23 @@ function createApp(options = {}) {
         .get(messageId, req.session.userId, otherId, otherId, req.session.userId);
       if (!message?.media_key) throw new HttpError(404, "Media not found.");
       if (isBlobKey(message.media_key)) {
-        return res.redirect(302, blobUrl(message.media_key));
+        const url = blobUrl(message.media_key);
+        if (url.includes(".private.blob.vercel-storage.com")) {
+          const ext = path.extname(url).toLowerCase();
+          const filename = message.media_type === "image"
+            ? (ext === ".webp" ? "image.webp" : `image${ext}`)
+            : (ext === ".wav" ? "voice-note.wav" : `voice-note${ext}`);
+          res.set({
+            "Cache-Control": "private, no-store",
+            "Content-Type": message.media_mime,
+            "Content-Disposition": `inline; filename="${filename}"`,
+            "X-Content-Type-Options": "nosniff",
+            "Accept-Ranges": "bytes"
+          });
+          const streamed = await streamBlob(message.media_key, res);
+          if (streamed) return;
+        }
+        return res.redirect(302, url);
       }
       const ext = path.extname(message.media_key).toLowerCase();
       const filename = message.media_type === "image"
@@ -1825,7 +1852,7 @@ function createApp(options = {}) {
               ? error.status
               : 500;
     if (status >= 500) {
-      console.error("Request failed:", error.code || error.name || "Error");
+      console.error("Request failed:", error.stack || error.message || error);
     }
     res.status(status).json({
       error:
