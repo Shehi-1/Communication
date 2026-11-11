@@ -939,7 +939,7 @@ function createApp(options = {}) {
             "Content-Disposition": 'inline; filename="profile.webp"',
             "X-Content-Type-Options": "nosniff"
           });
-          const streamed = await streamBlob(user.avatar_key, res);
+          const streamed = await streamBlob(user.avatar_key, res, req);
           if (streamed) return;
         }
         return res.redirect(302, url);
@@ -1809,7 +1809,7 @@ function createApp(options = {}) {
             "X-Content-Type-Options": "nosniff",
             "Accept-Ranges": "bytes"
           });
-          const streamed = await streamBlob(message.media_key, res);
+          const streamed = await streamBlob(message.media_key, res, req);
           if (streamed) return;
         }
         return res.redirect(302, url);

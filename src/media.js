@@ -230,16 +230,47 @@ async function removeMedia(mediaDir, key) {
   }
 }
 
-async function streamBlob(urlOrKey, res) {
+async function streamBlob(urlOrKey, res, req) {
   if (!isBlobEnabled()) return false;
   const targetUrl = isBlobKey(urlOrKey) ? blobUrl(urlOrKey) : urlOrKey;
   try {
+    const rangeHeader = req?.headers?.range;
     const { stream, blob } = await vercelBlob.get(targetUrl, {
       access: cachedBlobAccess || "private",
       token: process.env.BLOB_READ_WRITE_TOKEN
     });
+
     if (blob?.contentType) {
       res.setHeader("Content-Type", blob.contentType);
+    }
+    res.setHeader("Accept-Ranges", "bytes");
+
+    if (rangeHeader && stream) {
+      const arrayBuffer = await new Response(stream).arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const totalSize = buffer.length;
+
+      const matches = rangeHeader.match(/bytes=(\d*)-(\d*)/);
+      if (matches) {
+        let start = matches[1] ? parseInt(matches[1], 10) : 0;
+        let end = matches[2] ? parseInt(matches[2], 10) : totalSize - 1;
+
+        if (start >= totalSize || end >= totalSize || start > end) {
+          res.status(416);
+          res.setHeader("Content-Range", `bytes */${totalSize}`);
+          return res.end();
+        }
+
+        const chunk = buffer.subarray(start, end + 1);
+        res.status(206);
+        res.setHeader("Content-Range", `bytes ${start}-${end}/${totalSize}`);
+        res.setHeader("Content-Length", chunk.length);
+        return res.end(chunk);
+      }
+    }
+
+    if (blob?.size) {
+      res.setHeader("Content-Length", blob.size);
     }
     const nodeStream = Readable.fromWeb(stream);
     nodeStream.pipe(res);
