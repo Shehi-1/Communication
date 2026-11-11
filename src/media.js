@@ -3,6 +3,13 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const sharp = require("sharp");
 
+let vercelBlob = null;
+try {
+  vercelBlob = require("@vercel/blob");
+} catch {
+  vercelBlob = null;
+}
+
 const IMAGE_TYPES = new Map([
   ["image/png", "png"],
   ["image/jpeg", "jpeg"],
@@ -116,11 +123,35 @@ async function validateAudio(file) {
   }
 }
 
+function isBlobEnabled() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN && vercelBlob);
+}
+
 async function storeMedia(mediaDir, buffer, extension) {
-  await fs.mkdir(mediaDir, { recursive: true, mode: 0o700 });
   const key = `${crypto.randomUUID()}.${extension}`;
+  if (isBlobEnabled()) {
+    const contentType = extension === "webp"
+      ? "image/webp"
+      : extension === "wav"
+        ? "audio/wav"
+        : undefined;
+    const blob = await vercelBlob.put(`media/${key}`, buffer, {
+      access: "public",
+      contentType
+    });
+    return `blob:${blob.url}`;
+  }
+  await fs.mkdir(mediaDir, { recursive: true, mode: 0o700 });
   await fs.writeFile(path.join(mediaDir, key), buffer, { flag: "wx", mode: 0o600 });
   return key;
+}
+
+function isBlobKey(key) {
+  return typeof key === "string" && key.startsWith("blob:");
+}
+
+function blobUrl(key) {
+  return key.slice(5);
 }
 
 function mediaPath(mediaDir, key) {
@@ -135,7 +166,17 @@ function mediaPath(mediaDir, key) {
 
 async function removeMedia(mediaDir, key) {
   if (!key) return;
-  await fs.rm(mediaPath(mediaDir, key), { force: true });
+  if (isBlobKey(key) && isBlobEnabled()) {
+    try {
+      await vercelBlob.del(blobUrl(key));
+    } catch {
+      // Ignored if already removed
+    }
+    return;
+  }
+  if (!isBlobKey(key)) {
+    await fs.rm(mediaPath(mediaDir, key), { force: true });
+  }
 }
 
 module.exports = {
@@ -144,5 +185,7 @@ module.exports = {
   validateAudio,
   storeMedia,
   mediaPath,
-  removeMedia
+  removeMedia,
+  isBlobKey,
+  blobUrl
 };

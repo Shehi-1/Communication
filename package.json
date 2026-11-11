@@ -11,6 +11,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@vercel/blob": "^2.9.0",
     "bcryptjs": "^3.0.2",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",

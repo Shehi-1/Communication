@@ -19,7 +19,9 @@ const {
   validateAudio,
   storeMedia,
   mediaPath,
-  removeMedia
+  removeMedia,
+  isBlobKey,
+  blobUrl
 } = require("./media");
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,24}$/;
@@ -928,6 +930,9 @@ function createApp(options = {}) {
       const user = await db.prepare("SELECT avatar_key FROM users WHERE id = ?").get(userId);
       if (!user?.avatar_key) throw new HttpError(404, "Profile picture not found.");
       if (userId !== req.session.userId) await requireConnection(req.session.userId, userId);
+      if (isBlobKey(user.avatar_key)) {
+        return res.redirect(302, blobUrl(user.avatar_key));
+      }
       res.set({
         "Cache-Control": "private, no-store",
         "Content-Type": "image/webp",
@@ -1270,6 +1275,9 @@ function createApp(options = {}) {
       if (!status?.media_key) throw new HttpError(404, "Status media not found.");
       if (status.user_id !== req.session.userId) {
         await requireConnection(req.session.userId, status.user_id);
+      }
+      if (isBlobKey(status.media_key)) {
+        return res.redirect(302, blobUrl(status.media_key));
       }
       res.set({
         "Cache-Control": "private, no-store",
@@ -1776,6 +1784,9 @@ function createApp(options = {}) {
         )
         .get(messageId, req.session.userId, otherId, otherId, req.session.userId);
       if (!message?.media_key) throw new HttpError(404, "Media not found.");
+      if (isBlobKey(message.media_key)) {
+        return res.redirect(302, blobUrl(message.media_key));
+      }
       const ext = path.extname(message.media_key).toLowerCase();
       const filename = message.media_type === "image"
         ? (ext === ".webp" ? "image.webp" : `image${ext}`)
