@@ -1424,16 +1424,39 @@ function renderConversations(conversations) {
     button.type = "button";
     button.className = `conversation-row${activeConversation?.id === user.id ? " selected" : ""}`;
     button.addEventListener("click", () => openConversation(user));
+    
     const avatar = createAvatar(user);
-    const copy = document.createElement("span");
+    
+    const copy = document.createElement("div");
     copy.className = "conversation-copy";
+    
+    const topRow = document.createElement("div");
+    topRow.className = "conversation-top-row";
+    
     const name = document.createElement("span");
     name.className = "conversation-name";
     name.textContent = user.username;
+    
+    const time = document.createElement("span");
+    time.className = "conversation-time";
+    if (user.lastMessageAt) {
+      const d = new Date(user.lastMessageAt);
+      const isToday = new Date().toDateString() === d.toDateString();
+      time.textContent = isToday
+        ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+        : d.toLocaleDateString([], { month: "short", day: "numeric" });
+    }
+    topRow.append(name, time);
+
+    const bottomRow = document.createElement("div");
+    bottomRow.className = "conversation-bottom-row";
+
     const preview = document.createElement("span");
     preview.className = "conversation-preview";
-    preview.textContent = user.lastMessage || "Start a conversation";
-    copy.append(name, preview);
+    preview.textContent = user.lastMessage || "Tap to chat";
+    bottomRow.append(preview);
+
+    copy.append(topRow, bottomRow);
     button.append(avatar, copy);
     item.append(button);
     list.append(item);
