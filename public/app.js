@@ -1425,7 +1425,10 @@ function renderConversations(conversations) {
     button.className = `conversation-row${activeConversation?.id === user.id ? " selected" : ""}`;
     button.addEventListener("click", () => openConversation(user));
     
-    const avatar = createAvatar(user);
+    const avatar = document.createElement("span");
+    avatar.className = "avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    avatar.textContent = user.username.charAt(0).toUpperCase();
     
     const copy = document.createElement("div");
     copy.className = "conversation-copy";
