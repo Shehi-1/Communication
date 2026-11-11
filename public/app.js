@@ -863,7 +863,13 @@ function statusTimeRemaining(value) {
 function renderStatusFeed(statuses) {
   statusFeed.replaceChildren();
   for (const status of statuses) {
-    const isOwner = Number(status.user.id) === Number(currentUser?.id);
+    const isOwner = Boolean(
+      status.isOwner ||
+      (status.user && currentUser && (
+        Number(status.user.id) === Number(currentUser.id) ||
+        status.user.username === currentUser.username
+      ))
+    );
     const item = document.createElement("div");
     item.className = "status-card";
     item.setAttribute("role", "listitem");
@@ -981,7 +987,13 @@ async function openStatus(statusId) {
     document.querySelector("#status-viewer-body").textContent = status.body;
     document.querySelector("#status-viewer-expires").textContent =
       `${statusTimeRemaining(status.expiresAt)} · statuses disappear after 24 hours`;
-    const isOwner = Number(status.user.id) === Number(currentUser?.id);
+    const isOwner = Boolean(
+      status.isOwner ||
+      (status.user && currentUser && (
+        Number(status.user.id) === Number(currentUser.id) ||
+        status.user.username === currentUser.username
+      ))
+    );
     if (isOwner) {
       renderStatusViewers(status.viewers || []);
       document.querySelector("#status-viewer-list-section").hidden = false;

@@ -1123,10 +1123,11 @@ function createApp(options = {}) {
       );
       res.json({
         statuses: rows.map((row) => {
-          const user = safeUser(row);
+          const user = { ...safeUser(row), id: row.user_id };
           return {
             id: row.id,
             user,
+            isOwner: row.user_id === userId,
             body: row.body,
             mediaUrl: row.media_key ? `/api/statuses/${row.id}/media` : null,
             createdAt: row.created_at,
@@ -1225,7 +1226,8 @@ function createApp(options = {}) {
       }
       const status = {
         id: row.id,
-        user: safeUser(row),
+        user: { ...safeUser(row), id: row.user_id },
+        isOwner,
         body: row.body,
         mediaUrl: row.media_key ? `/api/statuses/${row.id}/media` : null,
         createdAt: row.created_at,
