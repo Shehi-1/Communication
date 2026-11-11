@@ -185,25 +185,19 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 .profile-button { display: inline-flex; align-items: center; gap: 9px; padding: 3px 8px 3px 3px; border: 0; border-radius: 999px; color: var(--ink); background: transparent; }
 .profile-button:hover { background: var(--surface-hover); }
 .status-section {
-  display: grid;
-  width: min(100% - 48px, 1260px);
-  min-height: 94px;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 18px;
-  margin: 8px auto 0;
-  padding: 10px 15px;
-  border: 1px solid var(--line);
-  border-radius: 13px;
+  display: block;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid var(--line);
   background: var(--paper);
+  flex: 0 0 auto;
 }
-.status-heading { display: flex; align-items: center; gap: 14px; }
-.status-heading h2 { margin: 0 0 3px; font-size: 13px; }
+.status-heading { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.status-heading h2 { margin: 0 0 2px; font-size: 12px; }
 .status-heading p, .status-viewer-user p { margin: 0; color: var(--muted); font-size: 10px; }
-.status-heading .button { flex: 0 0 auto; padding-inline: 10px; font-size: 11px; }
-.status-feed { display: flex; min-width: 0; align-items: center; gap: 14px; overflow-x: auto; padding: 2px 2px 5px; scrollbar-width: thin; }
+.status-heading .button { flex: 0 0 auto; padding-inline: 9px; min-height: 30px; font-size: 11px; }
+.status-feed { display: flex; min-width: 0; align-items: center; gap: 10px; overflow-x: auto; padding: 6px 0 2px; scrollbar-width: thin; }
 .status-feed:empty { display: none; }
-.status-feed-state { grid-column: 2; margin: 0; color: var(--muted); font-size: 11px; }
+.status-feed-state { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
 .status-feed-state:empty { display: none; }
 .status-feed-state.error { color: var(--danger); }
 .status-card { display: grid; width: 68px; flex: 0 0 68px; justify-items: center; gap: 4px; padding: 0; border: 0; color: var(--ink); background: transparent; text-align: center; }
@@ -215,10 +209,10 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 .workspace {
   display: grid;
   width: min(100% - 48px, 1260px);
-  height: min(790px, calc(100vh - 220px));
+  height: min(870px, calc(100vh - 120px));
   min-height: 520px;
   grid-template-columns: 330px minmax(0, 1fr);
-  margin: 20px auto;
+  margin: 14px auto;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 15px;
@@ -226,7 +220,14 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
   box-shadow: 0 12px 40px #263b3910;
 }
 
-.sidebar { display: flex; min-height: 0; flex-direction: column; border-right: 1px solid var(--line); background: var(--paper); }
+.sidebar { display: flex; min-height: 0; flex-direction: column; border-right: 1px solid var(--line); background: var(--paper); overflow: hidden; }
+
+.status-section {
+  flex: 0 0 auto;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
 .search-section, .people-section { padding: 20px 19px; }
 .search-section { border-bottom: 1px solid var(--line); }
 .sidebar h2 { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; font-size: 13px; font-weight: 800; letter-spacing: -.01em; }
@@ -451,18 +452,18 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 
 @media (max-width: 720px) {
   .topbar { height: 60px; padding: 0 16px; }
-  .status-section { width: 100%; min-height: 82px; gap: 11px; margin: 0; padding: 8px 12px; border-right: 0; border-left: 0; border-radius: 0; }
-  .status-heading { flex-direction: column; align-items: flex-start; gap: 6px; }
-  .status-heading p { max-width: 120px; line-height: 1.35; }
-  .status-heading .button { min-height: 31px; white-space: nowrap; }
-  .status-feed { gap: 11px; }
-  .status-card { width: 57px; flex-basis: 57px; }
-  .status-card-avatar { width: 44px; height: 44px; }
-  .status-card-avatar .avatar { width: 36px; height: 36px; }
-  .status-card-name { max-width: 57px; }
-  .status-feed-state { grid-column: 2; font-size: 10px; }
-  .workspace { width: 100%; height: calc(100vh - 142px); min-height: 0; grid-template-columns: 1fr; margin: 0; border: 0; border-radius: 0; }
-  .sidebar { display: grid; min-height: 0; grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; border-right: 0; }
+  .status-section { padding: 10px 12px 6px; }
+  .status-heading { flex-direction: row; gap: 8px; }
+  .status-heading p { display: none; }
+  .status-heading .button { min-height: 28px; white-space: nowrap; font-size: 10px; }
+  .status-feed { gap: 10px; }
+  .status-card { width: 52px; flex-basis: 52px; }
+  .status-card-avatar { width: 40px; height: 40px; }
+  .status-card-avatar .avatar { width: 32px; height: 32px; }
+  .status-card-name { max-width: 52px; }
+  .workspace { width: 100%; height: calc(100vh - 60px); min-height: 0; grid-template-columns: 1fr; margin: 0; border: 0; border-radius: 0; }
+  .sidebar { display: grid; min-height: 0; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; border-right: 0; }
+  .status-section { grid-column: 1 / -1; }
   .search-section { grid-column: 1 / -1; padding: 14px 16px; }
   .search-section h2 { margin-bottom: 9px; }
   .people-section { min-height: 0; padding: 14px 12px; overflow: auto; }
@@ -471,6 +472,7 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
   .workspace.chat-open { grid-template-rows: minmax(155px, 31vh) minmax(0, 1fr); }
   .workspace.chat-open .sidebar { grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr); }
   .workspace.chat-open .search-section { display: none; }
+  .workspace.chat-open .status-section { display: none; }
   .workspace.chat-open .conversations-section { display: block; grid-column: 1; border-left: 0; }
   .workspace.chat-open .people-section:not(.conversations-section) { grid-column: 2; border-left: 1px solid var(--line); }
   .chat-panel { min-height: 0; border-top: 1px solid var(--line); }
@@ -497,13 +499,12 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
   .account-name { display: none; }
   .profile-button { padding-right: 3px; }
   .workspace.chat-open { grid-template-rows: minmax(140px, 29vh) minmax(0, 1fr); }
-  .status-section { min-height: 78px; }
   .person-row { padding-inline: 3px; }
   .row-action { padding: 6px 7px; }
 }
 
 @media (max-height: 500px) and (max-width: 720px) {
-  .workspace { height: calc(100vh - 124px); }
+  .workspace { height: calc(100vh - 60px); }
   .workspace.chat-open { grid-template-rows: minmax(96px, 24vh) minmax(0, 1fr); }
   .workspace.chat-open .sidebar { grid-template-rows: minmax(0, 1fr); }
   .workspace.chat-open .people-section:not(.conversations-section) { display: none; }
@@ -511,7 +512,7 @@ h1, h2, .brand { font-family: Manrope, "Segoe UI", sans-serif; }
 }
 
 @media (max-height: 640px) and (min-width: 721px) {
-  .workspace { height: calc(100vh - 200px); min-height: 0; margin-block: 10px; }
+  .workspace { height: calc(100vh - 90px); min-height: 0; margin-block: 10px; }
   .messages { padding-block: 14px; }
 }
 
