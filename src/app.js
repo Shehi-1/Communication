@@ -1776,11 +1776,16 @@ function createApp(options = {}) {
         )
         .get(messageId, req.session.userId, otherId, otherId, req.session.userId);
       if (!message?.media_key) throw new HttpError(404, "Media not found.");
+      const ext = path.extname(message.media_key).toLowerCase();
+      const filename = message.media_type === "image"
+        ? (ext === ".webp" ? "image.webp" : `image${ext}`)
+        : (ext === ".wav" ? "voice-note.wav" : `voice-note${ext}`);
       res.set({
         "Cache-Control": "private, no-store",
         "Content-Type": message.media_mime,
-        "Content-Disposition": `inline; filename="${message.media_type === "image" ? "image.webp" : "voice-note"}"`,
-        "X-Content-Type-Options": "nosniff"
+        "Content-Disposition": `inline; filename="${filename}"`,
+        "X-Content-Type-Options": "nosniff",
+        "Accept-Ranges": "bytes"
       });
       res.sendFile(mediaPath(mediaDir, message.media_key), (error) => {
         if (error && !res.headersSent) next(error);
